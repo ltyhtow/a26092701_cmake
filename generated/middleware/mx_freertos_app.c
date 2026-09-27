@@ -16,6 +16,9 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "mx_freertos_app.h"
+#include "FreeRTOS.h"
+#include "projdefs.h"
+#include "stm32c5xx_hal_gpio.h"
 
 /* Private define ------------------------------------------------------------*/
 #define Task1_stack_size  128U
@@ -63,7 +66,9 @@ static void function1(void *pvParameters)
 
   for(;;)
   {
-    /* Infinite loop executing Task1 functionality. */
+    HAL_GPIO_TogglePin(HAL_GPIOA, HAL_GPIO_PIN_3);
+    vTaskDelay(pdMS_TO_TICKS(500));
+
   }
 }
 

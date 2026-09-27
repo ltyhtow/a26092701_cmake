@@ -30,6 +30,7 @@ extern "C" {
 #include "mx_cortex_debug.h"
 #include "mx_cortex_mpu.h"
 #include "mx_cortex_nvic.h"
+#include "mx_gpio_default.h"
 #include "mx_icache.h"
 #include "mx_rcc.h"
 #include "mx_tim17.h"
@@ -71,6 +72,12 @@ extern "C" {
     Cortex_NVIC: No software label has been defined for this peripheral instance
       in the STM32CubeMX2 configuration panel.
       As a result, no aliases are generated for mx_cortex_nvic_init
+    ************************************************************* */
+
+  /* *************************************************************
+    gpio_default: No software label has been defined for this peripheral instance
+      in the STM32CubeMX2 configuration panel.
+      As a result, no aliases are generated for mx_gpio_default_init
     ************************************************************* */
 
   /* *************************************************************
@@ -123,6 +130,12 @@ extern "C" {
     Cortex_NVIC: No software label has been defined for this peripheral instance
       in the STM32CubeMX2 configuration panel.
       As a result, no aliases are generated for mx_cortex_nvic_deinit
+    ************************************************************* */
+
+  /* *************************************************************
+    gpio_default: No software label has been defined for this peripheral instance
+      in the STM32CubeMX2 configuration panel.
+      As a result, no aliases are generated for mx_gpio_default_deinit
     ************************************************************* */
 
   /* *************************************************************

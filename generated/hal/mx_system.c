@@ -119,6 +119,12 @@ system_status_t mx_system_init(void)
     return SYSTEM_PERIPHERAL_ERROR;
   }
 
+  /** gpio_default */
+  if (mx_gpio_default_init() != SYSTEM_OK)
+  {
+    return SYSTEM_PERIPHERAL_ERROR;
+  }
+
   if (post_system_init_hook() != SYSTEM_OK)
   {
     return SYSTEM_POSTSYSTEM_ERROR;

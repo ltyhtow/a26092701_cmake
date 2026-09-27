@@ -2,6 +2,9 @@
     "configurations": [
         {
             "name": "STM32",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
             "compileCommands": "${workspaceFolder}/build/debug_GCC_STM32C562CET6/compile_commands.json",
             "intelliSenseMode": "windows-msvc-x64",
             "cStandard": "c17",

@@ -16,6 +16,7 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "mx_freertos_app.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -43,6 +44,10 @@ int main(void)
     /*
       * You can start your application code here
       */
+
+    app_synctasks_init();  //初始化freertos任务
+    vTaskStartScheduler();
+
     while (1) {}
   }
 } /* end main */
