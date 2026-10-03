@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
-  * @file           : mx_tim12.h
-  * @brief          : Header for mx_tim12.c file.
+  * @file           : mx_tim5.h
+  * @brief          : Header for mx_tim5.c file.
   ******************************************************************************
   * @attention
   *
@@ -16,8 +16,8 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef MX_TIM12_H
-#define MX_TIM12_H
+#ifndef MX_TIM5_H
+#define MX_TIM5_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +29,14 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 
+/** Primary aliases for TIM5_CH1 pin */
+#define ENCODER2_A_PORT                       HAL_GPIOA
+#define ENCODER2_A_PIN                        HAL_GPIO_PIN_0
+
+/** Primary aliases for TIM5_CH2 pin */
+#define ENCODER2_B_PORT                       HAL_GPIOA
+#define ENCODER2_B_PIN                        HAL_GPIO_PIN_1
+
 /* Exported macros -----------------------------------------------------------*/
 /* Exported variables --------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
@@ -36,26 +44,26 @@ extern "C" {
 /* Exported functions for TIM in HAL layer */
 /******************************************************************************/
 /**
-  * @brief  mx_tim12 init function.
+  * @brief  mx_tim5 init function.
   *         This function configures the hardware resources used in this example.
   * @retval Pointer to handle
   * @retval NULL in case of failure
   */
-hal_tim_handle_t *mx_tim12_init(void);
+hal_tim_handle_t *mx_tim5_init(void);
 
 /**
-  * @brief  De-initialize mx_tim12 instance and return it.
+  * @brief  De-initialize mx_tim5 instance and return it.
   */
-void mx_tim12_deinit(void);
+void mx_tim5_deinit(void);
 
 /**
-  * @brief  Get the mx_tim12 object.
-  * @return Pointer on the mx_tim12 Handle
+  * @brief  Get the mx_tim5 object.
+  * @return Pointer on the mx_tim5 Handle
   */
-hal_tim_handle_t *mx_tim12_gethandle(void);
+hal_tim_handle_t *mx_tim5_gethandle(void);
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* MX_TIM12_H */
+#endif /* MX_TIM5_H */

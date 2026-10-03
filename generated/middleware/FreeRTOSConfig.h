@@ -32,7 +32,7 @@
 #define FREERTOS_CONFIG_H
 
 #define configENABLE_MPU                              0U
-#define configENABLE_FPU                              0U
+#define configENABLE_FPU                              1U
 #define configUSE_TICKLESS_IDLE                       0U
 #define configUSE_PREEMPTION                          1U
 #define configUSE_TIME_SLICING                        1U

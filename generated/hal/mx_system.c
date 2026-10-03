@@ -113,14 +113,38 @@ system_status_t mx_system_init(void)
     return SYSTEM_PERIPHERAL_ERROR;
   }
 
-  /** TIM12 */
-  if (mx_tim12_init() == NULL)
+  /** gpio_default */
+  if (mx_gpio_default_init() != SYSTEM_OK)
   {
     return SYSTEM_PERIPHERAL_ERROR;
   }
 
-  /** gpio_default */
-  if (mx_gpio_default_init() != SYSTEM_OK)
+  /** TIM8 */
+  if (mx_tim8_init() == NULL)
+  {
+    return SYSTEM_PERIPHERAL_ERROR;
+  }
+
+  /** I2C1 */
+  if (mx_i2c1_i2c_init() == NULL)
+  {
+    return SYSTEM_PERIPHERAL_ERROR;
+  }
+
+  /** TIM5 */
+  if (mx_tim5_init() == NULL)
+  {
+    return SYSTEM_PERIPHERAL_ERROR;
+  }
+
+  /** TIM2 */
+  if (mx_tim2_init() == NULL)
+  {
+    return SYSTEM_PERIPHERAL_ERROR;
+  }
+
+  /** ADC2 */
+  if (mx_adc2_init() == NULL)
   {
     return SYSTEM_PERIPHERAL_ERROR;
   }

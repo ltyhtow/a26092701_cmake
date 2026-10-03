@@ -29,6 +29,14 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 
+/** Primary aliases for USART1_RX pin */
+#define COMM_RX_PORT                          HAL_GPIOA
+#define COMM_RX_PIN                           HAL_GPIO_PIN_10
+
+/** Primary aliases for USART1_TX pin */
+#define COMM_TX_PORT                          HAL_GPIOA
+#define COMM_TX_PIN                           HAL_GPIO_PIN_15
+
 /* Exported macros -----------------------------------------------------------*/
 /* Exported variables --------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */

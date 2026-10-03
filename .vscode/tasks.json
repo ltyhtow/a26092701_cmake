@@ -1,0 +1,107 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "STM32: Build",
+            "type": "shell",
+            "command": "C:\\ST\\STM32CubeCLT_1.20.0\\CMake\\bin\\cmake.exe",
+            "args": [
+                "--build",
+                "--preset",
+                "debug_GCC_STM32C562CET6"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "STM32: Clean",
+            "type": "shell",
+            "command": "C:\\ST\\STM32CubeCLT_1.20.0\\CMake\\bin\\cmake.exe",
+            "args": [
+                "--build",
+                "--preset",
+                "debug_GCC_STM32C562CET6",
+                "--target",
+                "clean"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "STM32: Remote Flash (Anhui)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\remote_flash.ps1",
+                "-TargetIp",
+                "100.79.218.27",
+                "-Port",
+                "33333"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "STM32: Build"
+            ],
+            "group": {
+                "kind": "none"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "STM32: Flash",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\remote_flash.ps1"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "STM32: Build"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "STM32: Local Flash (CubeProgrammer)",
+            "type": "shell",
+            "command": "C:\\ST\\STM32CubeCLT_1.20.0\\STM32CubeProgrammer\\bin\\STM32_Programmer_CLI.exe",
+            "args": [
+                "-c",
+                "port=SWD",
+                "-w",
+                "${workspaceFolder}\\build\\debug_GCC_STM32C562CET6\\a26092701.elf",
+                "-v",
+                "-rst"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "STM32: Build"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

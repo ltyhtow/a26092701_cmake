@@ -74,31 +74,31 @@ hal_uart_handle_t *mx_usart1_uart_init(void)
   hal_gpio_config_t  gpio_config;
 
   /**
-    [GPIO Pin] ------> [Signal Name]
+    [GPIO Pin] ------> [Signal Name] ------> [Labels]
 
-       PA10    ------>   USART1_RX
+       PA10    ------>   USART1_RX   ------>  COMM_RX
     **/
   gpio_config.mode        = HAL_GPIO_MODE_ALTERNATE;
   gpio_config.output_type = HAL_GPIO_OUTPUT_PUSHPULL;
   gpio_config.pull        = HAL_GPIO_PULL_NO;
   gpio_config.speed       = HAL_GPIO_SPEED_FREQ_LOW;
   gpio_config.alternate   = HAL_GPIO_AF_7;
-  HAL_GPIO_Init(HAL_GPIOA, HAL_GPIO_PIN_10, &gpio_config);
+  HAL_GPIO_Init(COMM_RX_PORT, COMM_RX_PIN, &gpio_config);
 
   /**
-    [GPIO Pin] ------> [Signal Name]
+    [GPIO Pin] ------> [Signal Name] ------> [Labels]
 
-       PA15    ------>   USART1_TX
+       PA15    ------>   USART1_TX   ------>  COMM_TX
     **/
   gpio_config.mode        = HAL_GPIO_MODE_ALTERNATE;
   gpio_config.output_type = HAL_GPIO_OUTPUT_PUSHPULL;
   gpio_config.pull        = HAL_GPIO_PULL_UP;
   gpio_config.speed       = HAL_GPIO_SPEED_FREQ_LOW;
   gpio_config.alternate   = HAL_GPIO_AF_11;
-  HAL_GPIO_Init(HAL_GPIOA, HAL_GPIO_PIN_15, &gpio_config);
+  HAL_GPIO_Init(COMM_TX_PORT, COMM_TX_PIN, &gpio_config);
 
   /* Enable interrupt */
-  HAL_CORTEX_NVIC_SetPriority(USART1_IRQn, HAL_CORTEX_NVIC_PREEMP_PRIORITY_0, HAL_CORTEX_NVIC_SUB_PRIORITY_0);
+  HAL_CORTEX_NVIC_SetPriority(USART1_IRQn, HAL_CORTEX_NVIC_PREEMP_PRIORITY_5, HAL_CORTEX_NVIC_SUB_PRIORITY_0);
   HAL_CORTEX_NVIC_EnableIRQ(USART1_IRQn);
 
   /* Configure the DMA TX */
@@ -125,7 +125,7 @@ hal_uart_handle_t *mx_usart1_uart_init(void)
   }
 
   /* Enable the interruption for LPDMA1_CH0 */
-  HAL_CORTEX_NVIC_SetPriority(LPDMA1_CH0_IRQn, HAL_CORTEX_NVIC_PREEMP_PRIORITY_0, HAL_CORTEX_NVIC_SUB_PRIORITY_0);
+  HAL_CORTEX_NVIC_SetPriority(LPDMA1_CH0_IRQn, HAL_CORTEX_NVIC_PREEMP_PRIORITY_5, HAL_CORTEX_NVIC_SUB_PRIORITY_0);
   HAL_CORTEX_NVIC_EnableIRQ(LPDMA1_CH0_IRQn);
 
   /* Link the Transmit DMA handle to the UART handle */
@@ -158,7 +158,7 @@ hal_uart_handle_t *mx_usart1_uart_init(void)
   }
 
   /* Enable the interruption for LPDMA1_CH1 */
-  HAL_CORTEX_NVIC_SetPriority(LPDMA1_CH1_IRQn, HAL_CORTEX_NVIC_PREEMP_PRIORITY_0, HAL_CORTEX_NVIC_SUB_PRIORITY_0);
+  HAL_CORTEX_NVIC_SetPriority(LPDMA1_CH1_IRQn, HAL_CORTEX_NVIC_PREEMP_PRIORITY_5, HAL_CORTEX_NVIC_SUB_PRIORITY_0);
   HAL_CORTEX_NVIC_EnableIRQ(LPDMA1_CH1_IRQn);
 
   /* Link the Receive DMA handle to the UART handle */
@@ -181,7 +181,7 @@ void mx_usart1_uart_deinit(void)
   HAL_RCC_USART1_DisableClock();
 
   /* De-initialize all GPIOA pins associated with USART1 */
-  HAL_GPIO_DeInit(HAL_GPIOA, HAL_GPIO_PIN_10 | HAL_GPIO_PIN_15);
+  HAL_GPIO_DeInit(HAL_GPIOA, COMM_RX_PIN | COMM_TX_PIN);
 
   /* De-initialize the DMA channel */
   HAL_DMA_DeInit(&hLPDMA1_CH0);

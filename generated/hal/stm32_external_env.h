@@ -26,6 +26,14 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 
+/* ########################## VDD Value #######################################*/
+/**
+  * @brief VDD Value.
+  */
+#if !defined  (VDD_VALUE)
+#define  VDD_VALUE             3300UL /*!< Value of VDD in mV */
+#endif /* VDD_VALUE */
+
 /* ########################## Oscillator Values adaptation ####################*/
 /**
   * @brief Adjust the value of External High Speed oscillator (HSE) used in your application.
@@ -33,7 +41,7 @@ extern "C" {
   *        (when HSE is used as system clock source, directly or through the PLL).
   */
 #if !defined  (HSE_VALUE)
-#define HSE_VALUE              8000000UL /*!< Value of the External oscillator in Hz */
+#define HSE_VALUE              24000000UL /*!< Value of the External oscillator in Hz */
 #endif /* HSE_VALUE */
 
 #if !defined  (HSE_STARTUP_TIMEOUT)

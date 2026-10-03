@@ -33,6 +33,24 @@ extern "C" {
 /* Exported defines for gpio_default in HAL layer                             */
 /******************************************************************************/
 
+/* Primary aliases for GPIO PA3 pin */
+#define SYS_LED_PORT                                    HAL_GPIOA
+#define SYS_LED_PIN                                     HAL_GPIO_PIN_3
+#define SYS_LED_INIT_STATE                              HAL_GPIO_PIN_SET
+#define SYS_LED_ACTIVE_STATE                            HAL_GPIO_PIN_SET
+#define SYS_LED_INACTIVE_STATE                          HAL_GPIO_PIN_RESET
+
+/* Primary aliases for GPIO PB1 pin */
+#define MPU6050_INT_PORT                                HAL_GPIOB
+#define MPU6050_INT_PIN                                 HAL_GPIO_PIN_1
+
+/* Primary aliases for GPIO PB14 pin */
+#define SYS_IO_PORT                                     HAL_GPIOB
+#define SYS_IO_PIN                                      HAL_GPIO_PIN_14
+#define SYS_IO_INIT_STATE                               HAL_GPIO_PIN_RESET
+#define SYS_IO_ACTIVE_STATE                             HAL_GPIO_PIN_SET
+#define SYS_IO_INACTIVE_STATE                           HAL_GPIO_PIN_RESET
+
 /* Exported macros -----------------------------------------------------------*/
 /* Exported variables --------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
@@ -51,6 +69,17 @@ system_status_t mx_gpio_default_init(void);
   * @brief  De-initialize gpio_default instance.
   */
 system_status_t mx_gpio_default_deinit(void);
+
+/**
+  * @brief  Get the EXTI1 object.
+  * @retval Pointer on the EXTI1 Handle
+  */
+hal_exti_handle_t *mx_gpio_default_exti1_gethandle(void);
+
+/******************************************************************************/
+/*                            EXTI Line1 interrupt                            */
+/******************************************************************************/
+void EXTI1_IRQHandler(void);
 
 #ifdef __cplusplus
 }

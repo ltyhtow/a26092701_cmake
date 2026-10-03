@@ -50,7 +50,7 @@ system_status_t mx_rcc_init(void)
 
     hal_rcc_psi_config_t config_psi;
   config_psi.psi_source = HAL_RCC_PSI_SRC_HSE;
-  config_psi.psi_ref = HAL_RCC_PSI_REF_8MHZ;
+  config_psi.psi_ref = HAL_RCC_PSI_REF_24MHZ;
   config_psi.psi_out = HAL_RCC_PSI_OUT_144MHZ;
   if (HAL_RCC_PSI_SetConfig(&config_psi) != HAL_OK)
   {
@@ -103,9 +103,26 @@ void mx_rcc_deinit(void)
   */
 system_status_t mx_rcc_peripherals_clock_config(void)
 {
+  /* Peripherals using PCLK1 (144 MHz):
+    I2C1
+  */
+
   /* Peripherals using PCLK2 (144 MHz):
     USART1
   */
+
+  /* Peripherals using PSIS (144 MHz):
+    ADC2
+  */
+  /* PSIS already enabled inside mx_rcc_init() */
+
+  /* Peripherals using ADC_DAC_DIV (36 MHz):
+    ADC2
+  */
+  if (HAL_RCC_ADCDAC_SetKernelClkPrescaler(HAL_RCC_ADCDAC_PRESCALER4) != HAL_OK)
+  {
+    return SYSTEM_CLOCK_ERROR;
+  }
 
   return SYSTEM_OK;
 }
