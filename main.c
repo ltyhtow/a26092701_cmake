@@ -19,6 +19,11 @@
 #include "mx_freertos_app.h"
 #include "mx_tim8.h"
 
+volatile uint32_t g_diag_gpio_moder;
+volatile uint32_t g_diag_gpio_otyper;
+volatile uint32_t g_diag_gpio_odr;
+volatile uint32_t g_diag_gpio_idr;
+
 static void main_gpio_diagnostic(void)
 {
   hal_gpio_config_t gpio_config;
@@ -38,6 +43,19 @@ static void main_gpio_diagnostic(void)
   HAL_GPIO_WritePin(MOTOR1_IN2_PORT, MOTOR1_IN2_PIN, HAL_GPIO_PIN_RESET);
   HAL_GPIO_WritePin(MOTOR2_IN1_PORT, MOTOR2_IN1_PIN, HAL_GPIO_PIN_RESET);
   HAL_GPIO_WritePin(MOTOR2_IN2_PORT, MOTOR2_IN2_PIN, HAL_GPIO_PIN_RESET);
+
+  /* Repeat the PB10 configuration at register level for debugger inspection. */
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+  GPIOB->MODER = (GPIOB->MODER & ~GPIO_MODER_MODE10_Msk) |
+                 GPIO_MODER_MODE10_0;
+  GPIOB->OTYPER &= ~GPIO_OTYPER_OT10;
+  GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD10_Msk;
+  GPIOB->BSRR = GPIO_BSRR_BS10;
+
+  g_diag_gpio_moder = GPIOB->MODER;
+  g_diag_gpio_otyper = GPIOB->OTYPER;
+  g_diag_gpio_odr = GPIOB->ODR;
+  g_diag_gpio_idr = GPIOB->IDR;
 }
 
 /* Private typedef -----------------------------------------------------------*/
