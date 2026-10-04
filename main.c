@@ -17,6 +17,28 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "mx_freertos_app.h"
+#include "mx_tim8.h"
+
+static void main_gpio_diagnostic(void)
+{
+  hal_gpio_config_t gpio_config;
+
+  gpio_config.mode = HAL_GPIO_MODE_OUTPUT;
+  gpio_config.speed = HAL_GPIO_SPEED_FREQ_LOW;
+  gpio_config.pull = HAL_GPIO_PULL_NO;
+  gpio_config.output_type = HAL_GPIO_OUTPUT_PUSHPULL;
+  gpio_config.init_state = HAL_GPIO_PIN_RESET;
+
+  (void)HAL_GPIO_Init(HAL_GPIOB,
+                      MOTOR1_IN1_PIN | MOTOR1_IN2_PIN |
+                      MOTOR2_IN1_PIN | MOTOR2_IN2_PIN,
+                      &gpio_config);
+
+  HAL_GPIO_WritePin(MOTOR1_IN1_PORT, MOTOR1_IN1_PIN, HAL_GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MOTOR1_IN2_PORT, MOTOR1_IN2_PIN, HAL_GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MOTOR2_IN1_PORT, MOTOR2_IN1_PIN, HAL_GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MOTOR2_IN2_PORT, MOTOR2_IN2_PIN, HAL_GPIO_PIN_RESET);
+}
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -41,6 +63,8 @@ int main(void)
   }
   else
   {
+    main_gpio_diagnostic();
+
     /*
       * You can start your application code here
       */
@@ -51,4 +75,3 @@ int main(void)
     while (1) {}
   }
 } /* end main */
-

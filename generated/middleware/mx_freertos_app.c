@@ -23,9 +23,8 @@
 
 /* Private define ------------------------------------------------------------*/
 #define Task1_stack_size  128U
-#define MOTOR_TEST_DUTY   720U
-#define MOTOR_TEST_HOLD_MS 1000U
-#define MOTOR_TEST_PAUSE_MS 500U
+#define MOTOR_GPIO_DIAGNOSTIC 1U
+#define MOTOR_TEST_DUTY   7199U
 /* Private typedef -----------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -37,6 +36,7 @@ static TaskHandle_t Task1_Handle;
 /* Tasks entry function ------------------------------------------------------*/
 static void function1(void *pvParameters);
 
+#if !MOTOR_GPIO_DIAGNOSTIC
 static void motor_test_set_pulses(hal_tim_handle_t *timer,
                                   uint32_t motor1_in1,
                                   uint32_t motor1_in2,
@@ -48,29 +48,31 @@ static void motor_test_set_pulses(hal_tim_handle_t *timer,
   (void)HAL_TIM_OC_SetCompareUnitPulse(timer, HAL_TIM_OC_COMPARE_UNIT_3, motor2_in1);
   (void)HAL_TIM_OC_SetCompareUnitPulse(timer, HAL_TIM_OC_COMPARE_UNIT_4, motor2_in2);
 }
+#endif
 
-static void motor_test_stop(hal_tim_handle_t *timer)
+#if MOTOR_GPIO_DIAGNOSTIC
+static void motor_gpio_set_diagnostic_levels(void)
 {
-  motor_test_set_pulses(timer, 0U, 0U, 0U, 0U);
-  (void)HAL_TIM_Stop(timer);
-  (void)HAL_TIM_OC_StopChannel(timer, HAL_TIM_CHANNEL_1);
-  (void)HAL_TIM_OC_StopChannel(timer, HAL_TIM_CHANNEL_2);
-  (void)HAL_TIM_OC_StopChannel(timer, HAL_TIM_CHANNEL_3);
-  (void)HAL_TIM_OC_StopChannel(timer, HAL_TIM_CHANNEL_4);
-}
+  hal_gpio_config_t gpio_config;
 
-static void motor_test_hold(hal_tim_handle_t *timer,
-                            uint32_t motor1_in1,
-                            uint32_t motor1_in2,
-                            uint32_t motor2_in1,
-                            uint32_t motor2_in2,
-                            TickType_t duration)
-{
-  motor_test_set_pulses(timer, motor1_in1, motor1_in2, motor2_in1, motor2_in2);
-  vTaskDelay(duration);
-  motor_test_set_pulses(timer, 0U, 0U, 0U, 0U);
-  vTaskDelay(pdMS_TO_TICKS(MOTOR_TEST_PAUSE_MS));
+  gpio_config.mode = HAL_GPIO_MODE_OUTPUT;
+  gpio_config.speed = HAL_GPIO_SPEED_FREQ_LOW;
+  gpio_config.pull = HAL_GPIO_PULL_NO;
+  gpio_config.output_type = HAL_GPIO_OUTPUT_PUSHPULL;
+  gpio_config.init_state = HAL_GPIO_PIN_RESET;
+
+  (void)HAL_GPIO_Init(HAL_GPIOB,
+                      MOTOR1_IN1_PIN | MOTOR1_IN2_PIN |
+                      MOTOR2_IN1_PIN | MOTOR2_IN2_PIN,
+                      &gpio_config);
+
+  /* Motor 1 forward command: IN1 high, IN2 low. Motor 2 remains disabled. */
+  HAL_GPIO_WritePin(MOTOR1_IN1_PORT, MOTOR1_IN1_PIN, HAL_GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MOTOR1_IN2_PORT, MOTOR1_IN2_PIN, HAL_GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MOTOR2_IN1_PORT, MOTOR2_IN1_PIN, HAL_GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MOTOR2_IN2_PORT, MOTOR2_IN2_PIN, HAL_GPIO_PIN_RESET);
 }
+#endif
 
 /**
   * @brief Initializes FreeRTOS kernel objects.
@@ -103,14 +105,27 @@ static void function1(void *pvParameters)
 {
   ( void ) pvParameters;
 
+#if MOTOR_GPIO_DIAGNOSTIC
+  motor_gpio_set_diagnostic_levels();
+  for (;;) {
+    HAL_GPIO_TogglePin(HAL_GPIOA, HAL_GPIO_PIN_3);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+#else
   hal_tim_handle_t *tim8 = mx_tim8_gethandle();
 
-  /* Start all four output channels once; a zero compare value keeps them low. */
+  /* Load full-duty compare values before starting the timer. */
+  motor_test_set_pulses(tim8, MOTOR_TEST_DUTY, 0U,
+                        MOTOR_TEST_DUTY, 0U);
+  (void)HAL_TIM_GenerateEvent(tim8, HAL_TIM_SW_EVENT_UPD);
+
+  /* Start all four output channels once; the unused channels remain low. */
   if ((HAL_TIM_OC_StartChannel(tim8, HAL_TIM_CHANNEL_1) != HAL_OK) ||
       (HAL_TIM_OC_StartChannel(tim8, HAL_TIM_CHANNEL_2) != HAL_OK) ||
       (HAL_TIM_OC_StartChannel(tim8, HAL_TIM_CHANNEL_3) != HAL_OK) ||
       (HAL_TIM_OC_StartChannel(tim8, HAL_TIM_CHANNEL_4) != HAL_OK) ||
-      (HAL_TIM_Start(tim8) != HAL_OK))
+      (HAL_TIM_Start(tim8) != HAL_OK) ||
+      (HAL_TIM_BREAK_EnableMainOutput(tim8) != HAL_OK))
   {
     for (;;) {
       HAL_GPIO_TogglePin(HAL_GPIOA, HAL_GPIO_PIN_3);
@@ -118,24 +133,9 @@ static void function1(void *pvParameters)
     }
   }
 
-  /* AT8236: PWM on IN1/IN2 with the other input low gives fast-decay motion. */
-  motor_test_hold(tim8, MOTOR_TEST_DUTY, 0U, 0U, 0U,
-                  pdMS_TO_TICKS(MOTOR_TEST_HOLD_MS));
-  motor_test_hold(tim8, 0U, MOTOR_TEST_DUTY, 0U, 0U,
-                  pdMS_TO_TICKS(MOTOR_TEST_HOLD_MS));
-  motor_test_hold(tim8, 0U, 0U, MOTOR_TEST_DUTY, 0U,
-                  pdMS_TO_TICKS(MOTOR_TEST_HOLD_MS));
-  motor_test_hold(tim8, 0U, 0U, 0U, MOTOR_TEST_DUTY,
-                  pdMS_TO_TICKS(MOTOR_TEST_HOLD_MS));
-  motor_test_hold(tim8, MOTOR_TEST_DUTY, 0U, MOTOR_TEST_DUTY, 0U,
-                  pdMS_TO_TICKS(MOTOR_TEST_HOLD_MS));
-
-  motor_test_stop(tim8);
-
-  for(;;)
-  {
+  for (;;) {
     HAL_GPIO_TogglePin(HAL_GPIOA, HAL_GPIO_PIN_3);
     vTaskDelay(pdMS_TO_TICKS(500));
-
   }
+#endif
 }

@@ -5,7 +5,10 @@
             "name": "default",
             "hidden": true,
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/${presetName}"
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "TOOLCHAIN_FILE": "GCC.14.3.1.cmake"
+            }
         },
         {
             "name": "debug_GCC_STM32C562CET6",

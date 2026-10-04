@@ -6,17 +6,19 @@
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "external",
-            "gdbTarget": "100.79.218.27:33333",
+            "device": "STM32C562CETx",
+            "gdbTarget": "100.79.218.27:3333",
             "cwd": "${workspaceFolder}",
             "executable": "${workspaceFolder}/build/debug_GCC_STM32C562CET6/a26092701.elf",
             "armToolchainPath": "C:/ST/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin",
             "preLaunchTask": "STM32: Build",
-            "runToEntryPoint": "main",
+            "showDevDebugOutput": "raw",
+            "runToEntryPoint": "Reset_Handler",
             "overrideLaunchCommands": [
-                "target remote 100.79.218.27:33333",
-                "monitor reset",
+                "monitor halt",
                 "load",
-                "monitor reset"
+                "monitor reset",
+                "monitor halt"
             ]
         },
         {
@@ -31,18 +33,13 @@
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "C:/ST/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
-            "miDebuggerServerAddress": "100.79.218.27:33333",
+            "miDebuggerServerAddress": "100.79.218.27:3333",
             "targetArchitecture": "arm",
             "preLaunchTask": "STM32: Build",
             "customLaunchSetupCommands": [
                 {
-                    "text": "target remote 100.79.218.27:33333",
-                    "description": "Connect to GDB Server in Anhui",
-                    "ignoreFailures": false
-                },
-                {
-                    "text": "monitor reset",
-                    "description": "Reset MCU",
+                    "text": "monitor halt",
+                    "description": "Halt core before download",
                     "ignoreFailures": true
                 },
                 {
@@ -54,6 +51,11 @@
                     "text": "monitor reset",
                     "description": "Reset MCU after download",
                     "ignoreFailures": true
+                },
+                {
+                    "text": "monitor halt",
+                    "description": "Halt at Reset_Handler",
+                    "ignoreFailures": false
                 }
             ]
         },
