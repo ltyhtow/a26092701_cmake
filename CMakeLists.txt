@@ -19,12 +19,18 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   middleware/serial/src/serial_transport.c
   middleware/serial/third_party/lwrb/src/lwrb/lwrb.c
   middleware/serial/third_party/lwpkt/src/lwpkt/lwpkt.c
+  middleware/mpu6050/src/mpu6050_port.c
+  middleware/mpu6050/src/imu_task.c
+  middleware/mpu6050/third_party/libdriver/src/driver_mpu6050.c
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
   middleware/serial/include
   middleware/serial/third_party/lwrb/src/include
   middleware/serial/third_party/lwpkt/src/include
+  middleware/mpu6050/include
+  middleware/mpu6050/third_party/libdriver/src
+  middleware/mpu6050/third_party/libdriver/interface
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC

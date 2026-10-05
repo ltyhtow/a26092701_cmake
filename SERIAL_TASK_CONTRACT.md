@@ -198,6 +198,21 @@ system_command_queue: 4
 - 在控制周期边界原子替换参数；
 - 回传 `0x82` 确认或 `0x83` 错误。
 
+## 6.1 IMU 数据接口
+
+`IMU` 任务以 200 Hz 调用 LibDriver MPU6050 适配层，向单槽队列写入最新的 `imu_sample_message_t`：
+
+```c
+extern QueueHandle_t imu_sample_queue;
+
+typedef struct {
+    uint32_t timestamp_ms;
+    mpu6050_sample_t sample;
+} imu_sample_message_t;
+```
+
+该任务只负责 I2C 设备初始化和原始加速度/陀螺仪采样，不负责姿态融合、PID 或电机输出。MPU6050 不在线时任务周期性重试初始化，控制层应把没有新样本视为传感器故障。
+
 ## 7. 字节序与 ABI 规则
 
 为了后续上位机兼容，必须明确规定：

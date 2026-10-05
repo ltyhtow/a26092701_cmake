@@ -36,6 +36,7 @@
 /* Definitions for Task1 */
 static TaskHandle_t Task1_Handle;
 static TaskHandle_t ProtocolTask_Handle;
+static TaskHandle_t ImuTask_Handle;
 static lwpkt_t protocol_packet;
 static SemaphoreHandle_t protocol_tx_mutex;
 static volatile uint8_t protocol_ready;
@@ -44,6 +45,7 @@ static serial_protocol_stats_t protocol_stats;
 QueueHandle_t motion_command_queue;
 QueueHandle_t pid_config_queue;
 QueueHandle_t system_command_queue;
+QueueHandle_t imu_sample_queue;
 
 /* Private functions prototype -----------------------------------------------*/
 /* Tasks entry function ------------------------------------------------------*/
@@ -65,10 +67,11 @@ int32_t app_synctasks_init (void)
   motion_command_queue = xQueueCreate(1U, sizeof(motion_command_t));
   pid_config_queue = xQueueCreate(2U, sizeof(pid_config_command_t));
   system_command_queue = xQueueCreate(4U, sizeof(system_command_t));
+  imu_sample_queue = xQueueCreate(1U, sizeof(imu_sample_message_t));
   protocol_tx_mutex = xSemaphoreCreateMutex();
 
   if (motion_command_queue == NULL || pid_config_queue == NULL || system_command_queue == NULL ||
-      protocol_tx_mutex == NULL)
+      imu_sample_queue == NULL || protocol_tx_mutex == NULL)
   {
       app_cleanup_before_scheduler();
       return -1;
@@ -84,6 +87,13 @@ int32_t app_synctasks_init (void)
   }
 
   if (serial_transport_init(ProtocolTask_Handle) != pdPASS)
+  {
+      app_cleanup_before_scheduler();
+      return -1;
+  }
+
+  ret = imu_task_start(imu_sample_queue, &ImuTask_Handle);
+  if (ret != pdPASS)
   {
       app_cleanup_before_scheduler();
       return -1;
@@ -305,6 +315,11 @@ static void app_cleanup_before_scheduler(void)
       vTaskDelete(Task1_Handle);
       Task1_Handle = NULL;
   }
+  if (ImuTask_Handle != NULL)
+  {
+      vTaskDelete(ImuTask_Handle);
+      ImuTask_Handle = NULL;
+  }
   if (motion_command_queue != NULL)
   {
       vQueueDelete(motion_command_queue);
@@ -319,6 +334,11 @@ static void app_cleanup_before_scheduler(void)
   {
       vQueueDelete(system_command_queue);
       system_command_queue = NULL;
+  }
+  if (imu_sample_queue != NULL)
+  {
+      vQueueDelete(imu_sample_queue);
+      imu_sample_queue = NULL;
   }
   if (protocol_tx_mutex != NULL)
   {
