@@ -15,8 +15,17 @@ typedef struct {
     float gyro_dps[3];
 } mpu6050_sample_t;
 
+typedef struct {
+    uint8_t  address_8bit;
+    uint8_t  who_am_i;
+    uint16_t init_result;
+    uint32_t hal_status;
+    uint32_t hal_error_codes;
+} mpu6050_diagnostics_t;
+
 uint8_t mpu6050_port_init(void);
 uint8_t mpu6050_port_read(mpu6050_sample_t *sample);
+void mpu6050_port_get_diagnostics(mpu6050_diagnostics_t *diagnostics);
 uint8_t mpu6050_port_deinit(void);
 
 #ifdef __cplusplus

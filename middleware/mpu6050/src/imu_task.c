@@ -22,6 +22,7 @@ static void imu_task_entry(void *argument) {
         message.timestamp_ms = (uint32_t)xTaskGetTickCount();
         imu_init_failures++;
         message.error_code = (uint16_t)init_result;
+        mpu6050_port_get_diagnostics(&message.diagnostics);
         (void)xQueueOverwrite(imu_sample_queue, &message);
         vTaskDelay(pdMS_TO_TICKS(500U));
     }
@@ -29,6 +30,7 @@ static void imu_task_entry(void *argument) {
     for (;;) {
         memset(&message, 0, sizeof(message));
         message.timestamp_ms = (uint32_t)xTaskGetTickCount();
+        mpu6050_port_get_diagnostics(&message.diagnostics);
         if (mpu6050_port_read(&sample) == 0U) {
             message.status_flags = 0x0001U;
             message.sample = sample;

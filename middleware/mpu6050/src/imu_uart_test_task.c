@@ -13,6 +13,7 @@ static QueueHandle_t imu_uart_source_queue;
 static void imu_uart_test_task_entry(void *argument) {
     imu_sample_message_t message;
     imu_telemetry_t telemetry;
+    imu_diagnostic_t diagnostic;
     uint8_t sequence = 0U;
 
     (void)argument;
@@ -34,6 +35,19 @@ static void imu_uart_test_task_entry(void *argument) {
                sizeof(telemetry.gyro_raw));
         telemetry.error_code = message.error_code;
         telemetry.timestamp_ms = message.timestamp_ms;
+        if (message.status_flags == 0U && message.error_code != 0xFFFFU) {
+            memset(&diagnostic, 0, sizeof(diagnostic));
+            diagnostic.version = SERIAL_PROTOCOL_VERSION;
+            diagnostic.sequence = sequence;
+            diagnostic.address_8bit = message.diagnostics.address_8bit;
+            diagnostic.who_am_i = message.diagnostics.who_am_i;
+            diagnostic.init_result = message.diagnostics.init_result;
+            diagnostic.hal_status = message.diagnostics.hal_status;
+            diagnostic.hal_error_codes = message.diagnostics.hal_error_codes;
+            diagnostic.timestamp_ms = message.timestamp_ms;
+            (void)serial_protocol_send(SERIAL_CMD_IMU_DIAGNOSTIC,
+                                        &diagnostic, sizeof(diagnostic));
+        }
         (void)serial_protocol_send(SERIAL_CMD_IMU_STATUS,
                                    &telemetry, sizeof(telemetry));
     }

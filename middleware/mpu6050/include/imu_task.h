@@ -13,6 +13,7 @@ typedef struct {
     uint32_t timestamp_ms;
     uint16_t status_flags; /* bit0: sample valid */
     uint16_t error_code;
+    mpu6050_diagnostics_t diagnostics;
     mpu6050_sample_t sample;
 } imu_sample_message_t;
 

@@ -3,8 +3,11 @@
 #include "mx_i2c1.h"
 #include "stm32_hal.h"
 
+#include <string.h>
+
 static mpu6050_handle_t mpu6050_handle;
 static uint8_t mpu6050_ready;
+static mpu6050_diagnostics_t mpu6050_diagnostics;
 
 static uint8_t mpu6050_iic_init(void) {
     return (mx_i2c1_i2c_gethandle() != NULL) ? 0U : 1U;
@@ -51,6 +54,22 @@ static void mpu6050_dmp_orient_callback(uint8_t orientation) {
 
 uint8_t mpu6050_port_init(void) {
     uint8_t result;
+    uint8_t who_am_i = 0xFFU;
+    hal_i2c_handle_t *i2c = mx_i2c1_i2c_gethandle();
+    hal_status_t hal_status = HAL_ERROR;
+
+    memset(&mpu6050_diagnostics, 0, sizeof(mpu6050_diagnostics));
+    mpu6050_diagnostics.address_8bit = MPU6050_ADDRESS_AD0_LOW;
+    mpu6050_diagnostics.who_am_i = 0xFFU;
+
+    if (i2c != NULL) {
+        hal_status = HAL_I2C_MASTER_MemRead(i2c, MPU6050_ADDRESS_AD0_LOW,
+                                            0x75U, HAL_I2C_MEM_ADDR_8BIT,
+                                            &who_am_i, 1U, 100U);
+        mpu6050_diagnostics.who_am_i = who_am_i;
+        mpu6050_diagnostics.hal_status = (uint32_t)hal_status;
+        mpu6050_diagnostics.hal_error_codes = i2c->last_error_codes;
+    }
 
     DRIVER_MPU6050_LINK_INIT(&mpu6050_handle, mpu6050_handle);
     DRIVER_MPU6050_LINK_IIC_INIT(&mpu6050_handle, mpu6050_iic_init);
@@ -65,6 +84,10 @@ uint8_t mpu6050_port_init(void) {
 
     mpu6050_handle.iic_addr = MPU6050_ADDRESS_AD0_LOW;
     result = mpu6050_init(&mpu6050_handle);
+    mpu6050_diagnostics.init_result = result;
+    if (i2c != NULL) {
+        mpu6050_diagnostics.hal_error_codes = i2c->last_error_codes;
+    }
     if (result != 0U) {
         mpu6050_ready = 0U;
         return result;
@@ -100,6 +123,12 @@ uint8_t mpu6050_port_read(mpu6050_sample_t *sample) {
     }
     return mpu6050_read(&mpu6050_handle, &sample->accel_raw, &sample->accel_g,
                         &sample->gyro_raw, &sample->gyro_dps, &length);
+}
+
+void mpu6050_port_get_diagnostics(mpu6050_diagnostics_t *diagnostics) {
+    if (diagnostics != NULL) {
+        *diagnostics = mpu6050_diagnostics;
+    }
 }
 
 uint8_t mpu6050_port_deinit(void) {
