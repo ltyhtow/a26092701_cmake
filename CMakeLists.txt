@@ -21,8 +21,14 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   middleware/serial/third_party/lwpkt/src/lwpkt/lwpkt.c
   middleware/mpu6050/src/mpu6050_port.c
   middleware/mpu6050/src/imu_task.c
+  middleware/mpu6050/src/imu_fusion.c
+  middleware/mpu6050/src/imu_fusion_task.c
   middleware/mpu6050/src/imu_uart_test_task.c
   middleware/mpu6050/third_party/libdriver/src/driver_mpu6050.c
+  middleware/mpu6050/third_party/fusion/FusionAhrs.c
+  middleware/mpu6050/third_party/fusion/FusionBias.c
+  middleware/mpu6050/third_party/fusion/FusionConvention.c
+  middleware/mpu6050/third_party/fusion/FusionRemap.c
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
@@ -32,6 +38,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
   middleware/mpu6050/include
   middleware/mpu6050/third_party/libdriver/src
   middleware/mpu6050/third_party/libdriver/interface
+  middleware/mpu6050/third_party/fusion
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC

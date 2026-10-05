@@ -217,9 +217,19 @@ typedef struct {
 
 该任务只负责 I2C 设备初始化和原始加速度/陀螺仪采样，不负责姿态融合、PID 或电机输出。MPU6050 不在线时任务周期性重试初始化，控制层应把没有新样本视为传感器故障。
 
-`IMUTx` 测试任务默认关闭（`IMU_UART_TEST_ENABLED=0`）。启用后，它每 50 ms 从 IMU 单槽队列取最新消息，通过 `serial_protocol_send(SERIAL_CMD_IMU_STATUS, ...)` 发送 24 字节 `imu_telemetry_t`。负载包含版本、序号、有效标志、错误码、三轴加速度原始值、三轴陀螺仪原始值、保留字段和采样时间戳。即使 MPU6050 初始化或读取失败，也会发送无效状态帧；若队列暂时没有消息，错误码为 `0xFFFF`。该任务用于验证 MPU6050、I2C 和 USART1 链路，姿态融合接入后保持关闭。
+`IMUTx` 测试任务默认关闭（`IMU_UART_TEST_ENABLED=0`）。启用后，它每 50 ms 从 IMU 单槽队列取最新消息，通过 `serial_protocol_send(SERIAL_CMD_IMU_STATUS, ...)` 发送 24 字节 `imu_telemetry_t`。负载包含版本、序号、有效标志、错误码、三轴加速度原始值、三轴陀螺仪原始值、保留字段和采样时间戳。即使 MPU6050 初始化或读取失败，也会发送无效状态帧；若队列暂时没有消息，错误码为 `0xFFFF`。该任务用于验证 MPU6050、I2C 和 USART1 原始数据链路；姿态融合由独立的 `IMUFusion` 任务运行。
 
 初始化失败时，启用的 `IMUTx` 还会发送 `CMD=0x85` 的 24 字节 `imu_diagnostic_t`，其中包含 LibDriver 使用的 8 位地址、直接读取的 `WHO_AM_I`、HAL 返回状态、HAL I2C 错误位和 LibDriver 初始化结果。
+
+启用 `IMU_UART_TEST_ENABLED` 后，`IMUTx` 还会从 `imu_attitude_queue` 取最新融合快照并发送 `CMD=0x86` 的 52 字节 `imu_attitude_telemetry_t`。角度和 bias 使用 Q16.16，四元数使用 Q1.30；状态位表示启动校准、校准完成、姿态有效、静止、加速度拒绝和 Fusion startup 状态。
+
+### 6.2 姿态融合接口
+
+`IMU` 任务将每个最新原始样本分别写入原始遥测队列和 `imu_fusion_input_queue`；两个队列均为深度 1 的 latest-value inbox，不允许姿态任务与遥测任务竞争同一个队列。`IMUFusion` 任务消费融合输入并将最新 `imu_fusion_output_t` 写入 `imu_attitude_queue`。
+
+融合层使用 MIT 许可的 xioTechnologies Fusion，当前启用六轴 `FusionAhrsUpdateNoMagnetometer()`、`FusionBiasUpdate()` 和传感器轴重映射。上电后默认需要连续 400 个静止样本（约 2 秒）完成陀螺仪启动零偏平均；静止判定阈值和安装方向位于 `imu_config.h`。未完成校准时，输出仅携带 `IMU_FUSION_STATUS_CALIBRATING`；完成后输出四元数、roll/pitch/yaw、陀螺仪 bias 和 Fusion 状态位。
+
+MPU6050 没有磁力计，因此 yaw 只能由陀螺仪积分得到，长期会漂移；roll/pitch 才由重力方向校正。`imu_attitude_queue` 的深度为 1，后续平衡控制任务应读取最新姿态快照，不应直接消费原始 IMU 队列。
 
 ## 7. 字节序与 ABI 规则
 

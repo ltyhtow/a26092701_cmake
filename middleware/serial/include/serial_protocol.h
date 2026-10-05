@@ -17,6 +17,7 @@ extern "C" {
 #define SERIAL_CMD_RESPONSE     0x83U
 #define SERIAL_CMD_IMU_STATUS   0x84U
 #define SERIAL_CMD_IMU_DIAGNOSTIC 0x85U
+#define SERIAL_CMD_IMU_ATTITUDE 0x86U
 
 #define SERIAL_PROTOCOL_VERSION 1U
 
@@ -105,12 +106,32 @@ typedef struct {
     uint32_t timestamp_ms;
 } imu_diagnostic_t;
 
+typedef struct {
+    uint8_t  version;
+    uint8_t  sequence;
+    uint16_t status_flags;
+    uint16_t calibration_samples;
+    uint16_t reserved;
+    int32_t  roll_q16_16;
+    int32_t  pitch_q16_16;
+    int32_t  yaw_q16_16;
+    int32_t  gyro_bias_x_q16_16;
+    int32_t  gyro_bias_y_q16_16;
+    int32_t  gyro_bias_z_q16_16;
+    int32_t  quaternion_w_q30;
+    int32_t  quaternion_x_q30;
+    int32_t  quaternion_y_q30;
+    int32_t  quaternion_z_q30;
+    uint32_t timestamp_ms;
+} imu_attitude_telemetry_t;
+
 _Static_assert(sizeof(motion_command_t) == 16U, "motion command wire size");
 _Static_assert(sizeof(pid_config_command_t) == 20U, "pid command wire size");
 _Static_assert(sizeof(system_command_t) == 4U, "system command wire size");
 _Static_assert(sizeof(motion_telemetry_t) == 32U, "motion telemetry wire size");
 _Static_assert(sizeof(imu_telemetry_t) == 24U, "imu telemetry wire size");
 _Static_assert(sizeof(imu_diagnostic_t) == 24U, "imu diagnostic wire size");
+_Static_assert(sizeof(imu_attitude_telemetry_t) == 52U, "imu attitude wire size");
 
 /* Thread-safe packet submission API for FreeRTOS task context. */
 serial_protocol_result_t serial_protocol_send(uint32_t command, const void *data, size_t length);

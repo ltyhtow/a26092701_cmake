@@ -30,6 +30,7 @@ extern "C" {
 #include "task.h"
 #include "serial_protocol.h"
 #include "imu_task.h"
+#include "imu_fusion_task.h"
 #include "imu_uart_test_task.h"
 
 /* Exported types ------------------------------------------------------------*/
@@ -43,6 +44,8 @@ extern QueueHandle_t motion_command_queue;
 extern QueueHandle_t pid_config_queue;
 extern QueueHandle_t system_command_queue;
 extern QueueHandle_t imu_sample_queue;
+extern QueueHandle_t imu_fusion_input_queue;
+extern QueueHandle_t imu_attitude_queue;
 
 /** logging macro - just redirects to printf()
   * libc's stdout is redirected to UART thanks to the Basic stdio utility.

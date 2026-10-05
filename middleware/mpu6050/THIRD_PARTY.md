@@ -14,6 +14,17 @@ set, and reading output registers while asleep produces zero samples.
 
 The imported LibDriver source files retain their original MIT license headers.
 
+## xioTechnologies Fusion
+
+The `third_party/fusion` directory contains the upstream C implementation from
+`xioTechnologies/Fusion`, imported under the MIT license. The imported revision
+and license text are recorded in `third_party/FUSION_THIRD_PARTY.md`.
+
+The project uses `FusionAhrs`, `FusionBias`, `FusionRemap`, and the calibration
+helpers from `FusionModel.h`. The application adapter in `src/imu_fusion.c`
+owns startup stationary calibration and project-specific sensor units; the
+upstream Fusion sources are not modified.
+
 LibDriver's address constants use the left-shifted device address form
 (`0xD0`/`0xD2`). The STM32C5 HAL master memory APIs also document that the
 7-bit datasheet address must be shifted left before the call, so the adapter

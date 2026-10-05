@@ -9,7 +9,9 @@
 extern "C" {
 #endif
 
-BaseType_t imu_uart_test_task_start(QueueHandle_t sample_queue, TaskHandle_t *task_handle);
+BaseType_t imu_uart_test_task_start(QueueHandle_t sample_queue,
+                                    QueueHandle_t attitude_queue,
+                                    TaskHandle_t *task_handle);
 
 #ifdef __cplusplus
 }

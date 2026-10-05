@@ -37,6 +37,7 @@
 static TaskHandle_t Task1_Handle;
 static TaskHandle_t ProtocolTask_Handle;
 static TaskHandle_t ImuTask_Handle;
+static TaskHandle_t ImuFusionTask_Handle;
 #if IMU_UART_TEST_ENABLED
 static TaskHandle_t ImuUartTestTask_Handle;
 #endif
@@ -49,6 +50,8 @@ QueueHandle_t motion_command_queue;
 QueueHandle_t pid_config_queue;
 QueueHandle_t system_command_queue;
 QueueHandle_t imu_sample_queue;
+QueueHandle_t imu_fusion_input_queue;
+QueueHandle_t imu_attitude_queue;
 
 /* Private functions prototype -----------------------------------------------*/
 /* Tasks entry function ------------------------------------------------------*/
@@ -71,10 +74,13 @@ int32_t app_synctasks_init (void)
   pid_config_queue = xQueueCreate(2U, sizeof(pid_config_command_t));
   system_command_queue = xQueueCreate(4U, sizeof(system_command_t));
   imu_sample_queue = xQueueCreate(1U, sizeof(imu_sample_message_t));
+  imu_fusion_input_queue = xQueueCreate(1U, sizeof(imu_sample_message_t));
+  imu_attitude_queue = xQueueCreate(1U, sizeof(imu_fusion_output_t));
   protocol_tx_mutex = xSemaphoreCreateMutex();
 
   if (motion_command_queue == NULL || pid_config_queue == NULL || system_command_queue == NULL ||
-      imu_sample_queue == NULL || protocol_tx_mutex == NULL)
+      imu_sample_queue == NULL || imu_fusion_input_queue == NULL ||
+      imu_attitude_queue == NULL || protocol_tx_mutex == NULL)
   {
       app_cleanup_before_scheduler();
       return -1;
@@ -95,7 +101,15 @@ int32_t app_synctasks_init (void)
       return -1;
   }
 
-  ret = imu_task_start(imu_sample_queue, &ImuTask_Handle);
+  ret = imu_task_start(imu_sample_queue, imu_fusion_input_queue, &ImuTask_Handle);
+  if (ret != pdPASS)
+  {
+      app_cleanup_before_scheduler();
+      return -1;
+  }
+
+  ret = imu_fusion_task_start(imu_fusion_input_queue, imu_attitude_queue,
+                              &ImuFusionTask_Handle);
   if (ret != pdPASS)
   {
       app_cleanup_before_scheduler();
@@ -103,7 +117,8 @@ int32_t app_synctasks_init (void)
   }
 
 #if IMU_UART_TEST_ENABLED
-  ret = imu_uart_test_task_start(imu_sample_queue, &ImuUartTestTask_Handle);
+  ret = imu_uart_test_task_start(imu_sample_queue, imu_attitude_queue,
+                                &ImuUartTestTask_Handle);
   if (ret != pdPASS)
   {
       app_cleanup_before_scheduler();
@@ -332,6 +347,11 @@ static void app_cleanup_before_scheduler(void)
       vTaskDelete(ImuTask_Handle);
       ImuTask_Handle = NULL;
   }
+  if (ImuFusionTask_Handle != NULL)
+  {
+      vTaskDelete(ImuFusionTask_Handle);
+      ImuFusionTask_Handle = NULL;
+  }
 #if IMU_UART_TEST_ENABLED
   if (ImuUartTestTask_Handle != NULL)
   {
@@ -358,6 +378,16 @@ static void app_cleanup_before_scheduler(void)
   {
       vQueueDelete(imu_sample_queue);
       imu_sample_queue = NULL;
+  }
+  if (imu_fusion_input_queue != NULL)
+  {
+      vQueueDelete(imu_fusion_input_queue);
+      imu_fusion_input_queue = NULL;
+  }
+  if (imu_attitude_queue != NULL)
+  {
+      vQueueDelete(imu_attitude_queue);
+      imu_attitude_queue = NULL;
   }
   if (protocol_tx_mutex != NULL)
   {
