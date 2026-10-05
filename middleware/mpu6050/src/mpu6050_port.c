@@ -15,14 +15,14 @@ static uint8_t mpu6050_iic_deinit(void) {
 }
 
 static uint8_t mpu6050_iic_read(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len) {
-    return (HAL_I2C_MASTER_MemRead(mx_i2c1_i2c_gethandle(), (uint32_t)(addr >> 1U), reg,
+    return (HAL_I2C_MASTER_MemRead(mx_i2c1_i2c_gethandle(), addr, reg,
                                    HAL_I2C_MEM_ADDR_8BIT, buf, len, 100U) == HAL_OK)
                ? 0U
                : 1U;
 }
 
 static uint8_t mpu6050_iic_write(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len) {
-    return (HAL_I2C_MASTER_MemWrite(mx_i2c1_i2c_gethandle(), (uint32_t)(addr >> 1U), reg,
+    return (HAL_I2C_MASTER_MemWrite(mx_i2c1_i2c_gethandle(), addr, reg,
                                     HAL_I2C_MEM_ADDR_8BIT, buf, len, 100U) == HAL_OK)
                ? 0U
                : 1U;

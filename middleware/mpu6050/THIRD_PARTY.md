@@ -10,6 +10,7 @@ the balance controller and attitude estimator remain application code.
 
 The imported LibDriver source files retain their original MIT license headers.
 
-LibDriver's address constants use the 8-bit bus form (`0xD0`/`0xD2`), while
-the STM32C5 HAL expects a 7-bit target address. The adapter converts the
-address with `addr >> 1` before every HAL transaction.
+LibDriver's address constants use the left-shifted device address form
+(`0xD0`/`0xD2`). The STM32C5 HAL master memory APIs also document that the
+7-bit datasheet address must be shifted left before the call, so the adapter
+passes LibDriver's address through unchanged.
