@@ -45,7 +45,10 @@ int main(void)
       * You can start your application code here
       */
 
-    app_synctasks_init();  //初始化freertos任务
+    if (app_synctasks_init() != 0)
+    {
+      return (-1);
+    }
     vTaskStartScheduler();
 
     while (1) {}

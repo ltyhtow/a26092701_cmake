@@ -18,6 +18,24 @@ extern "C" {
 
 #define SERIAL_PROTOCOL_VERSION 1U
 
+typedef enum {
+    SERIAL_PROTOCOL_OK = 0,
+    SERIAL_PROTOCOL_NOT_READY = -1,
+    SERIAL_PROTOCOL_BUSY = -2,
+    SERIAL_PROTOCOL_INVALID_ARGUMENT = -3,
+    SERIAL_PROTOCOL_TX_FULL = -4,
+    SERIAL_PROTOCOL_ERROR = -5,
+} serial_protocol_result_t;
+
+typedef struct {
+    uint32_t rx_crc_errors;
+    uint32_t rx_stop_errors;
+    uint32_t rx_memory_errors;
+    uint32_t rx_timeouts;
+    uint32_t unknown_commands;
+    uint32_t queue_overruns;
+} serial_protocol_stats_t;
+
 typedef struct {
     uint8_t  version;
     uint8_t  sequence;
@@ -67,7 +85,8 @@ _Static_assert(sizeof(system_command_t) == 4U, "system command wire size");
 _Static_assert(sizeof(motion_telemetry_t) == 32U, "motion telemetry wire size");
 
 /* Thread-safe packet submission API for FreeRTOS task context. */
-int32_t serial_protocol_send(uint32_t command, const void *data, size_t length);
+serial_protocol_result_t serial_protocol_send(uint32_t command, const void *data, size_t length);
+void serial_protocol_get_stats(serial_protocol_stats_t *stats);
 
 #ifdef __cplusplus
 }

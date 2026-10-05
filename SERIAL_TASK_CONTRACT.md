@@ -156,7 +156,7 @@ extern QueueHandle_t system_command_queue;
 建议队列深度：
 
 ```text
-motion_command_queue: 4
+motion_command_queue: 1
 pid_config_queue:     2
 system_command_queue: 4
 ```
@@ -177,10 +177,10 @@ system_command_queue: 4
 - 只接受 `lwpktVALID`；
 - 检查 CMD、负载长度、版本和数值范围；
 - 将结构体值拷贝到对应队列；
-- 处理超时、CRC 错误和未知命令；
+- 处理超时、CRC 错误和未知命令，并累计协议统计；
 - 从 TX `lwrb` 驱动 UART DMA。
 
-其他 FreeRTOS 任务发送遥测或应答时调用 `serial_protocol_send()`；该函数是任务上下文接口，不可在 ISR 中调用。
+其他 FreeRTOS 任务发送遥测或应答时调用 `serial_protocol_send()`；该函数是任务上下文接口，不可在 ISR 中调用，并返回明确的 `serial_protocol_result_t` 错误域。
 
 ### 运动/平衡控制任务
 

@@ -26,8 +26,8 @@
 #include <string.h>
 
 /* Private define ------------------------------------------------------------*/
-#define Task1_stack_size  128U
-#define ProtocolTask_stack_size  384U
+#define Task1_stack_depth_words  128U
+#define ProtocolTask_stack_depth_words  384U
 #define PROTOCOL_TASK_PERIOD_MS 5U
 /* Private typedef -----------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
@@ -39,6 +39,7 @@ static TaskHandle_t ProtocolTask_Handle;
 static lwpkt_t protocol_packet;
 static SemaphoreHandle_t protocol_tx_mutex;
 static volatile uint8_t protocol_ready;
+static serial_protocol_stats_t protocol_stats;
 
 QueueHandle_t motion_command_queue;
 QueueHandle_t pid_config_queue;
@@ -49,6 +50,8 @@ QueueHandle_t system_command_queue;
 static void function1(void *pvParameters);
 static void protocol_task(void *pvParameters);
 static void protocol_dispatch_packet(const lwpkt_t *packet);
+static void protocol_event_callback(lwpkt_t *packet, lwpkt_evt_type_t event);
+static void app_cleanup_before_scheduler(void);
 
 /**
   * @brief Initializes FreeRTOS kernel objects.
@@ -67,23 +70,32 @@ int32_t app_synctasks_init (void)
   if (motion_command_queue == NULL || pid_config_queue == NULL || system_command_queue == NULL ||
       protocol_tx_mutex == NULL)
   {
+      app_cleanup_before_scheduler();
       return -1;
   }
 
-  ret = xTaskCreate(protocol_task, "Protocol", ProtocolTask_stack_size,
+  ret = xTaskCreate(protocol_task, "Protocol", ProtocolTask_stack_depth_words,
                     (void*) NULL, 2U, &ProtocolTask_Handle);
 
-  if (ret != pdPASS || serial_transport_init(ProtocolTask_Handle) != pdPASS)
+  if (ret != pdPASS)
   {
+      app_cleanup_before_scheduler();
+      return -1;
+  }
+
+  if (serial_transport_init(ProtocolTask_Handle) != pdPASS)
+  {
+      app_cleanup_before_scheduler();
       return -1;
   }
 
   /* Task1 creation-------------------------------------*/
-  ret = xTaskCreate(function1, "Task1", Task1_stack_size,
+  ret = xTaskCreate(function1, "Task1", Task1_stack_depth_words,
                     (void*) NULL, 0, &Task1_Handle);
 
   if (ret != pdPASS)
   {
+      app_cleanup_before_scheduler();
       return -1;
   }
 
@@ -145,7 +157,10 @@ static void protocol_dispatch_packet(const lwpkt_t *packet)
           if (value.version == SERIAL_PROTOCOL_VERSION && value.reserved == 0U &&
               value.loop_id <= 2U)
           {
-              (void)xQueueSend(pid_config_queue, &value, 0U);
+              if (xQueueSend(pid_config_queue, &value, 0U) != pdPASS)
+              {
+                  protocol_stats.queue_overruns++;
+              }
           }
       }
       break;
@@ -160,15 +175,27 @@ static void protocol_dispatch_packet(const lwpkt_t *packet)
           if (value.version == SERIAL_PROTOCOL_VERSION && value.reserved == 0U &&
               value.action >= 1U && value.action <= 4U)
           {
-              (void)xQueueSend(system_command_queue, &value, 0U);
+              if (xQueueSend(system_command_queue, &value, 0U) != pdPASS)
+              {
+                  protocol_stats.queue_overruns++;
+              }
           }
       }
       break;
     }
 
     default:
-      /* Unknown commands are ignored until an application response is added. */
+      protocol_stats.unknown_commands++;
       break;
+  }
+}
+
+static void protocol_event_callback(lwpkt_t *packet, lwpkt_evt_type_t event)
+{
+  (void)packet;
+  if (event == LWPKT_EVT_TIMEOUT)
+  {
+      protocol_stats.rx_timeouts++;
   }
 }
 
@@ -183,6 +210,7 @@ static void protocol_task(void *pvParameters)
       vTaskDelete(NULL);
       return;
   }
+  (void)lwpkt_set_evt_fn(&protocol_packet, protocol_event_callback);
   protocol_ready = 1U;
 
   for (;;)
@@ -194,6 +222,18 @@ static void protocol_task(void *pvParameters)
     do
     {
       result = lwpkt_process(&protocol_packet, now_ms);
+      if (result == lwpktERRCRC)
+      {
+          protocol_stats.rx_crc_errors++;
+      }
+      else if (result == lwpktERRSTOP)
+      {
+          protocol_stats.rx_stop_errors++;
+      }
+      else if (result == lwpktERRMEM)
+      {
+          protocol_stats.rx_memory_errors++;
+      }
       if (result == lwpktVALID)
       {
           protocol_dispatch_packet(&protocol_packet);
@@ -208,7 +248,7 @@ static void protocol_task(void *pvParameters)
 }
 
 /* This API is for FreeRTOS task context; it is not ISR-safe. */
-int32_t serial_protocol_send(uint32_t command, const void *data, size_t length)
+serial_protocol_result_t serial_protocol_send(uint32_t command, const void *data, size_t length)
 {
   lwpktr_t result;
   const BaseType_t protocol_task_owns_mutex =
@@ -218,17 +258,71 @@ int32_t serial_protocol_send(uint32_t command, const void *data, size_t length)
       (protocol_task_owns_mutex == pdFALSE &&
        xSemaphoreTake(protocol_tx_mutex, pdMS_TO_TICKS(10U)) != pdTRUE))
   {
-      return -1;
+      return (protocol_ready == 0U) ? SERIAL_PROTOCOL_NOT_READY : SERIAL_PROTOCOL_BUSY;
+  }
+  if ((data == NULL && length != 0U) || length > LWPKT_CFG_MAX_DATA_LEN)
+  {
+      if (protocol_task_owns_mutex == pdFALSE)
+      {
+          (void)xSemaphoreGive(protocol_tx_mutex);
+      }
+      return SERIAL_PROTOCOL_INVALID_ARGUMENT;
   }
 
   result = lwpkt_write(&protocol_packet, command, data, length);
-  if (result == lwpktOK)
-  {
-      serial_transport_poll_tx();
-  }
+  serial_transport_poll_tx();
   if (protocol_task_owns_mutex == pdFALSE)
   {
       (void)xSemaphoreGive(protocol_tx_mutex);
   }
-  return (result == lwpktOK) ? 0 : -(int32_t)result;
+  if (result == lwpktOK)
+  {
+      return SERIAL_PROTOCOL_OK;
+  }
+  return (result == lwpktERRMEM) ? SERIAL_PROTOCOL_TX_FULL : SERIAL_PROTOCOL_ERROR;
+}
+
+void serial_protocol_get_stats(serial_protocol_stats_t *stats)
+{
+  if (stats != NULL)
+  {
+      taskENTER_CRITICAL();
+      *stats = protocol_stats;
+      taskEXIT_CRITICAL();
+  }
+}
+
+static void app_cleanup_before_scheduler(void)
+{
+  serial_transport_deinit();
+  if (ProtocolTask_Handle != NULL)
+  {
+      vTaskDelete(ProtocolTask_Handle);
+      ProtocolTask_Handle = NULL;
+  }
+  if (Task1_Handle != NULL)
+  {
+      vTaskDelete(Task1_Handle);
+      Task1_Handle = NULL;
+  }
+  if (motion_command_queue != NULL)
+  {
+      vQueueDelete(motion_command_queue);
+      motion_command_queue = NULL;
+  }
+  if (pid_config_queue != NULL)
+  {
+      vQueueDelete(pid_config_queue);
+      pid_config_queue = NULL;
+  }
+  if (system_command_queue != NULL)
+  {
+      vQueueDelete(system_command_queue);
+      system_command_queue = NULL;
+  }
+  if (protocol_tx_mutex != NULL)
+  {
+      vSemaphoreDelete(protocol_tx_mutex);
+      protocol_tx_mutex = NULL;
+  }
 }
