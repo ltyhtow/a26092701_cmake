@@ -137,7 +137,6 @@ typedef struct {
     int16_t  right_pwm;
     uint16_t battery_mv;
     uint16_t fault_code;
-    uint16_t reserved2;
     uint32_t timestamp_ms;
 } motion_telemetry_t;
 ```
@@ -180,6 +179,8 @@ system_command_queue: 4
 - 将结构体值拷贝到对应队列；
 - 处理超时、CRC 错误和未知命令；
 - 从 TX `lwrb` 驱动 UART DMA。
+
+其他 FreeRTOS 任务发送遥测或应答时调用 `serial_protocol_send()`；该函数是任务上下文接口，不可在 ISR 中调用。
 
 ### 运动/平衡控制任务
 

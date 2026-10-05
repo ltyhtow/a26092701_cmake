@@ -26,7 +26,9 @@ extern "C" {
 #include <stdio.h>          /* printf */
 #include "mx_hal_def.h"  /* aliases to the target-specific generated code */
 #include "FreeRTOS.h"
+#include "queue.h"
 #include "task.h"
+#include "serial_protocol.h"
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
@@ -34,6 +36,10 @@ extern "C" {
 /* Exported variables --------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 int32_t app_synctasks_init(void);
+
+extern QueueHandle_t motion_command_queue;
+extern QueueHandle_t pid_config_queue;
+extern QueueHandle_t system_command_queue;
 
 /** logging macro - just redirects to printf()
   * libc's stdout is redirected to UART thanks to the Basic stdio utility.

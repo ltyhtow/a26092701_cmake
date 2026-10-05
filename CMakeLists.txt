@@ -16,11 +16,15 @@ include(cmake/components.cmake)
 
 # Stubs to be able to add compiler flag overrides, e.g. -Os
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-  # Add additional source files here
+  middleware/serial/src/serial_transport.c
+  middleware/serial/third_party/lwrb/src/lwrb/lwrb.c
+  middleware/serial/third_party/lwpkt/src/lwpkt/lwpkt.c
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-  # Add additional include directories here
+  middleware/serial/include
+  middleware/serial/third_party/lwrb/src/include
+  middleware/serial/third_party/lwpkt/src/include
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
