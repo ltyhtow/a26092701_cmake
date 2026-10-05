@@ -30,18 +30,24 @@
   */
 int main(void)
 {
-  /* Minimal GPIO diagnostic: bypass generated init and FreeRTOS. */
-  (void)HAL_Init();
+  /** System Init: this code placed in targets folder initializes your system.
+    * It calls the initialization (and sets the initial configuration) of the peripherals.
+    * You can use STM32CubeMX to generate and call this code or not in this project.
+    * It also contains the HAL initialization and the initial clock configuration.
+    */
+  if (mx_system_init() != SYSTEM_OK)
+  {
+    return (-1);
+  }
+  else
+  {
+    /*
+      * You can start your application code here
+      */
 
-  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
-  (void)RCC->AHB2ENR;
+    app_synctasks_init();  //初始化freertos任务
+    vTaskStartScheduler();
 
-  GPIOB->MODER = (GPIOB->MODER & ~GPIO_MODER_MODE10_Msk) |
-                 GPIO_MODER_MODE10_0;
-  GPIOB->OTYPER &= ~GPIO_OTYPER_OT10;
-  GPIOB->OSPEEDR &= ~GPIO_OSPEEDR_OSPEED10_Msk;
-  GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD10_Msk;
-  GPIOB->BSRR = GPIO_BSRR_BS10;
-
-  for (;;) {}
+    while (1) {}
+  }
 } /* end main */
