@@ -14,13 +14,14 @@ static QueueHandle_t imu_sample_queue;
 static void imu_task_entry(void *argument) {
     imu_sample_message_t message;
     mpu6050_sample_t sample;
+    uint8_t init_result;
 
     (void)argument;
-    while (mpu6050_port_init() != 0U) {
+    while ((init_result = mpu6050_port_init()) != 0U) {
         memset(&message, 0, sizeof(message));
         message.timestamp_ms = (uint32_t)xTaskGetTickCount();
         imu_init_failures++;
-        message.error_code = (uint16_t)imu_init_failures;
+        message.error_code = (uint16_t)init_result;
         (void)xQueueOverwrite(imu_sample_queue, &message);
         vTaskDelay(pdMS_TO_TICKS(500U));
     }
