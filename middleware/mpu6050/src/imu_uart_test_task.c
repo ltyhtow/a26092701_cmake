@@ -6,7 +6,6 @@
 #include <string.h>
 
 #define IMU_UART_TEST_STACK_DEPTH_WORDS 256U
-#define IMU_UART_TEST_PERIOD_MS         50U
 
 static QueueHandle_t imu_uart_source_queue;
 

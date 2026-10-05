@@ -217,9 +217,9 @@ typedef struct {
 
 该任务只负责 I2C 设备初始化和原始加速度/陀螺仪采样，不负责姿态融合、PID 或电机输出。MPU6050 不在线时任务周期性重试初始化，控制层应把没有新样本视为传感器故障。
 
-`IMUTx` 测试任务每 50 ms 从 IMU 单槽队列取最新消息，通过 `serial_protocol_send(SERIAL_CMD_IMU_STATUS, ...)` 发送 24 字节 `imu_telemetry_t`。负载包含版本、序号、有效标志、错误码、三轴加速度原始值、三轴陀螺仪原始值、保留字段和采样时间戳。即使 MPU6050 初始化或读取失败，也会发送无效状态帧；若队列暂时没有消息，错误码为 `0xFFFF`。这样可以区分传感器故障和 USART1 链路故障。该任务用于验证 MPU6050、I2C 和 USART1 链路，后续接入姿态融合后可移除。
+`IMUTx` 测试任务默认关闭（`IMU_UART_TEST_ENABLED=0`）。启用后，它每 50 ms 从 IMU 单槽队列取最新消息，通过 `serial_protocol_send(SERIAL_CMD_IMU_STATUS, ...)` 发送 24 字节 `imu_telemetry_t`。负载包含版本、序号、有效标志、错误码、三轴加速度原始值、三轴陀螺仪原始值、保留字段和采样时间戳。即使 MPU6050 初始化或读取失败，也会发送无效状态帧；若队列暂时没有消息，错误码为 `0xFFFF`。该任务用于验证 MPU6050、I2C 和 USART1 链路，姿态融合接入后保持关闭。
 
-初始化失败时，`IMUTx` 还会发送 `CMD=0x85` 的 24 字节 `imu_diagnostic_t`，其中包含 LibDriver 使用的 8 位地址、直接读取的 `WHO_AM_I`、HAL 返回状态、HAL I2C 错误位和 LibDriver 初始化结果。
+初始化失败时，启用的 `IMUTx` 还会发送 `CMD=0x85` 的 24 字节 `imu_diagnostic_t`，其中包含 LibDriver 使用的 8 位地址、直接读取的 `WHO_AM_I`、HAL 返回状态、HAL I2C 错误位和 LibDriver 初始化结果。
 
 ## 7. 字节序与 ABI 规则
 

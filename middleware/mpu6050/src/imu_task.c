@@ -5,9 +5,6 @@
 #include <string.h>
 
 #define IMU_TASK_STACK_DEPTH_WORDS 384U
-#define IMU_TASK_PERIOD_MS 5U
-
-static volatile uint32_t imu_init_failures;
 
 static QueueHandle_t imu_sample_queue;
 
@@ -20,7 +17,6 @@ static void imu_task_entry(void *argument) {
     while ((init_result = mpu6050_port_init()) != 0U) {
         memset(&message, 0, sizeof(message));
         message.timestamp_ms = (uint32_t)xTaskGetTickCount();
-        imu_init_failures++;
         message.error_code = (uint16_t)init_result;
         mpu6050_port_get_diagnostics(&message.diagnostics);
         (void)xQueueOverwrite(imu_sample_queue, &message);
@@ -38,7 +34,7 @@ static void imu_task_entry(void *argument) {
             message.error_code = 1U;
         }
         (void)xQueueOverwrite(imu_sample_queue, &message);
-        vTaskDelay(pdMS_TO_TICKS(IMU_TASK_PERIOD_MS));
+        vTaskDelay(pdMS_TO_TICKS(IMU_SAMPLE_PERIOD_MS));
     }
 }
 

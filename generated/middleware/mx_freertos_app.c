@@ -37,7 +37,9 @@
 static TaskHandle_t Task1_Handle;
 static TaskHandle_t ProtocolTask_Handle;
 static TaskHandle_t ImuTask_Handle;
+#if IMU_UART_TEST_ENABLED
 static TaskHandle_t ImuUartTestTask_Handle;
+#endif
 static lwpkt_t protocol_packet;
 static SemaphoreHandle_t protocol_tx_mutex;
 static volatile uint8_t protocol_ready;
@@ -100,12 +102,14 @@ int32_t app_synctasks_init (void)
       return -1;
   }
 
+#if IMU_UART_TEST_ENABLED
   ret = imu_uart_test_task_start(imu_sample_queue, &ImuUartTestTask_Handle);
   if (ret != pdPASS)
   {
       app_cleanup_before_scheduler();
       return -1;
   }
+#endif
 
   /* Task1 creation-------------------------------------*/
   ret = xTaskCreate(function1, "Task1", Task1_stack_depth_words,
@@ -328,11 +332,13 @@ static void app_cleanup_before_scheduler(void)
       vTaskDelete(ImuTask_Handle);
       ImuTask_Handle = NULL;
   }
+#if IMU_UART_TEST_ENABLED
   if (ImuUartTestTask_Handle != NULL)
   {
       vTaskDelete(ImuUartTestTask_Handle);
       ImuUartTestTask_Handle = NULL;
   }
+#endif
   if (motion_command_queue != NULL)
   {
       vQueueDelete(motion_command_queue);

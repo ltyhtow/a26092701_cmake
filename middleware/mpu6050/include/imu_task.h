@@ -3,6 +3,7 @@
 
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "imu_config.h"
 #include "mpu6050_port.h"
 
 #ifdef __cplusplus
