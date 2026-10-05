@@ -30,6 +30,7 @@ extern "C" {
 #include "task.h"
 #include "serial_protocol.h"
 #include "imu_task.h"
+#include "imu_uart_test_task.h"
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/

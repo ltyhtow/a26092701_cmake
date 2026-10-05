@@ -21,6 +21,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   middleware/serial/third_party/lwpkt/src/lwpkt/lwpkt.c
   middleware/mpu6050/src/mpu6050_port.c
   middleware/mpu6050/src/imu_task.c
+  middleware/mpu6050/src/imu_uart_test_task.c
   middleware/mpu6050/third_party/libdriver/src/driver_mpu6050.c
 )
 

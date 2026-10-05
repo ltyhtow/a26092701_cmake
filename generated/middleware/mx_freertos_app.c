@@ -37,6 +37,7 @@
 static TaskHandle_t Task1_Handle;
 static TaskHandle_t ProtocolTask_Handle;
 static TaskHandle_t ImuTask_Handle;
+static TaskHandle_t ImuUartTestTask_Handle;
 static lwpkt_t protocol_packet;
 static SemaphoreHandle_t protocol_tx_mutex;
 static volatile uint8_t protocol_ready;
@@ -93,6 +94,13 @@ int32_t app_synctasks_init (void)
   }
 
   ret = imu_task_start(imu_sample_queue, &ImuTask_Handle);
+  if (ret != pdPASS)
+  {
+      app_cleanup_before_scheduler();
+      return -1;
+  }
+
+  ret = imu_uart_test_task_start(imu_sample_queue, &ImuUartTestTask_Handle);
   if (ret != pdPASS)
   {
       app_cleanup_before_scheduler();
@@ -319,6 +327,11 @@ static void app_cleanup_before_scheduler(void)
   {
       vTaskDelete(ImuTask_Handle);
       ImuTask_Handle = NULL;
+  }
+  if (ImuUartTestTask_Handle != NULL)
+  {
+      vTaskDelete(ImuUartTestTask_Handle);
+      ImuUartTestTask_Handle = NULL;
   }
   if (motion_command_queue != NULL)
   {

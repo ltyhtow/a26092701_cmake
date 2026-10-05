@@ -15,6 +15,7 @@ extern "C" {
 #define SERIAL_CMD_TELEMETRY    0x81U
 #define SERIAL_CMD_PID_ACK      0x82U
 #define SERIAL_CMD_RESPONSE     0x83U
+#define SERIAL_CMD_IMU_STATUS   0x84U
 
 #define SERIAL_PROTOCOL_VERSION 1U
 
@@ -79,10 +80,22 @@ typedef struct {
     uint32_t timestamp_ms;
 } motion_telemetry_t;
 
+typedef struct {
+    uint8_t  version;
+    uint8_t  sequence;
+    uint16_t status_flags;      /* bit0: sample valid */
+    int16_t  accel_raw[3];
+    int16_t  gyro_raw[3];
+    uint16_t error_code;
+    uint16_t reserved;
+    uint32_t timestamp_ms;
+} imu_telemetry_t;
+
 _Static_assert(sizeof(motion_command_t) == 16U, "motion command wire size");
 _Static_assert(sizeof(pid_config_command_t) == 20U, "pid command wire size");
 _Static_assert(sizeof(system_command_t) == 4U, "system command wire size");
 _Static_assert(sizeof(motion_telemetry_t) == 32U, "motion telemetry wire size");
+_Static_assert(sizeof(imu_telemetry_t) == 24U, "imu telemetry wire size");
 
 /* Thread-safe packet submission API for FreeRTOS task context. */
 serial_protocol_result_t serial_protocol_send(uint32_t command, const void *data, size_t length);
