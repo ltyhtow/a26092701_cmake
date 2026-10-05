@@ -8,6 +8,10 @@ platform-independent I2C callbacks to the generated STM32C5 HAL I2C1 handle.
 The driver is used for register configuration and raw accel/gyro sampling;
 the balance controller and attitude estimator remain application code.
 
+The application adapter explicitly clears the MPU6050 sleep bit after the
+LibDriver reset sequence. The chip reset default keeps `PWR_MGMT_1.SLEEP`
+set, and reading output registers while asleep produces zero samples.
+
 The imported LibDriver source files retain their original MIT license headers.
 
 LibDriver's address constants use the left-shifted device address form

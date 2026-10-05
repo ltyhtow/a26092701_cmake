@@ -93,7 +93,11 @@ uint8_t mpu6050_port_init(void) {
         return result;
     }
 
-    result = mpu6050_set_clock_source(&mpu6050_handle, MPU6050_CLOCK_SOURCE_PLL_X_GYRO);
+    /* Device reset leaves PWR_MGMT_1.SLEEP set on MPU6050; wake it before sampling. */
+    result = mpu6050_set_sleep(&mpu6050_handle, MPU6050_BOOL_FALSE);
+    if (result == 0U) {
+        result = mpu6050_set_clock_source(&mpu6050_handle, MPU6050_CLOCK_SOURCE_PLL_X_GYRO);
+    }
     if (result == 0U) {
         result = mpu6050_set_sample_rate_divider(&mpu6050_handle, 4U);
     }
