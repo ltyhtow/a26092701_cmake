@@ -32,6 +32,7 @@ extern "C" {
 #include "imu_task.h"
 #include "imu_fusion_task.h"
 #include "imu_uart_test_task.h"
+#include "motor_polarity_test_task.h"
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/

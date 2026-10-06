@@ -38,6 +38,9 @@ static TaskHandle_t Task1_Handle;
 static TaskHandle_t ProtocolTask_Handle;
 static TaskHandle_t ImuTask_Handle;
 static TaskHandle_t ImuFusionTask_Handle;
+#if MOTOR_POLARITY_TEST_ENABLED
+static TaskHandle_t MotorPolarityTestTask_Handle;
+#endif
 #if IMU_UART_TEST_ENABLED
 static TaskHandle_t ImuUartTestTask_Handle;
 #endif
@@ -119,6 +122,15 @@ int32_t app_synctasks_init (void)
 #if IMU_UART_TEST_ENABLED
   ret = imu_uart_test_task_start(imu_sample_queue, imu_attitude_queue,
                                 &ImuUartTestTask_Handle);
+  if (ret != pdPASS)
+  {
+      app_cleanup_before_scheduler();
+      return -1;
+  }
+#endif
+
+#if MOTOR_POLARITY_TEST_ENABLED
+  ret = motor_polarity_test_task_start(&MotorPolarityTestTask_Handle);
   if (ret != pdPASS)
   {
       app_cleanup_before_scheduler();
@@ -352,6 +364,13 @@ static void app_cleanup_before_scheduler(void)
       vTaskDelete(ImuFusionTask_Handle);
       ImuFusionTask_Handle = NULL;
   }
+#if MOTOR_POLARITY_TEST_ENABLED
+  if (MotorPolarityTestTask_Handle != NULL)
+  {
+      vTaskDelete(MotorPolarityTestTask_Handle);
+      MotorPolarityTestTask_Handle = NULL;
+  }
+#endif
 #if IMU_UART_TEST_ENABLED
   if (ImuUartTestTask_Handle != NULL)
   {

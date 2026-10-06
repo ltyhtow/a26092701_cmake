@@ -24,6 +24,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
   middleware/mpu6050/src/imu_fusion.c
   middleware/mpu6050/src/imu_fusion_task.c
   middleware/mpu6050/src/imu_uart_test_task.c
+  middleware/motor/src/motor_polarity_test_task.c
   middleware/mpu6050/third_party/libdriver/src/driver_mpu6050.c
   middleware/mpu6050/third_party/fusion/FusionAhrs.c
   middleware/mpu6050/third_party/fusion/FusionBias.c
@@ -39,6 +40,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
   middleware/mpu6050/third_party/libdriver/src
   middleware/mpu6050/third_party/libdriver/interface
   middleware/mpu6050/third_party/fusion
+  middleware/motor/include
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
