@@ -38,26 +38,18 @@ static void motor_polarity_test_task_entry(void *argument) {
     hal_tim_handle_t *timer = mx_tim8_gethandle();
 
     (void)argument;
-    motor_outputs_set(timer, 0U, 0U, 0U, 0U);
+    motor_outputs_set(timer, MOTOR_TEST_DUTY, 0U, MOTOR_TEST_DUTY, 0U);
     if (motor_outputs_start(timer) != pdPASS) {
         motor_outputs_set(timer, 0U, 0U, 0U, 0U);
+        (void)HAL_TIM_BREAK_DisableMainOutput(timer);
+        (void)HAL_TIM_Stop(timer);
         vTaskDelete(NULL);
         return;
     }
 
-    /* A motor: IN1 PWM, IN2 low. Stop before testing B. */
-    motor_outputs_set(timer, MOTOR_TEST_DUTY, 0U, 0U, 0U);
-    vTaskDelay(pdMS_TO_TICKS(MOTOR_TEST_HOLD_MS));
-    motor_outputs_set(timer, 0U, 0U, 0U, 0U);
-    vTaskDelay(pdMS_TO_TICKS(MOTOR_TEST_PAUSE_MS));
-
-    /* B motor: IN1 PWM, IN2 low. */
-    motor_outputs_set(timer, 0U, 0U, MOTOR_TEST_DUTY, 0U);
-    vTaskDelay(pdMS_TO_TICKS(MOTOR_TEST_HOLD_MS));
-    motor_outputs_set(timer, 0U, 0U, 0U, 0U);
-    (void)HAL_TIM_BREAK_DisableMainOutput(timer);
-    (void)HAL_TIM_Stop(timer);
-    vTaskDelete(NULL);
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(1000U));
+    }
 }
 
 BaseType_t motor_polarity_test_task_start(TaskHandle_t *task_handle) {
