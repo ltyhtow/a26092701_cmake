@@ -1,6 +1,8 @@
 # a26092701 两轮平衡车项目交接记录
 
-更新时间：2026-10-05 03:08
+更新时间：2026-10-06
+
+> 注意：本文前半部分保留了早期硬件验证记录。文末“最新交接（2026-10-06）”是当前代码状态的权威说明，若与历史段落冲突，以文末为准。
 
 这份文档给后续 agent 使用，记录当前 STM32C562CET6 两轮平衡车工程、TIM8 电机测试、F411 PWM 监测器以及已经得到的硬件证据。
 
@@ -215,3 +217,77 @@ F411 使用 USB DFU 烧录时：
 ```
 
 若使用 ST-Link，将 `port=USB1` 改成 `port=SWD`。
+
+## 最新交接（2026-10-06）
+
+### 当前 Git 状态
+
+- 当前 HEAD：`3db6c93 test: run both motors continuously`
+- 工作树应保持干净；最近相关提交：
+  - `79ae012 feat: port Fusion attitude estimator`
+  - `4b03e04 fix: harden imu calibration and port boundary`
+  - `4ef0ad6 test: add guarded motor polarity sequence`
+  - `d98da70 test: extend motor polarity run duration`
+  - `3db6c93 test: run both motors continuously`
+- 默认构建命令仍为：
+
+```powershell
+& "C:\ST\STM32CubeCLT_1.20.0\CMake\bin\cmake.exe" --build --preset debug_GCC_STM32C562CET6
+```
+
+### IMU 与姿态融合
+
+- 当前传感器实现：`middleware/mpu6050/src/mpu6050_port.c`，内部使用 LibDriver MPU6050。
+- 任务和 Fusion 只依赖通用接口：`middleware/mpu6050/include/imu_port.h`。
+- 原始样本类型为 `imu_sample_t`，包含 raw 值、`accel_g` 和 `gyro_dps`。
+- 未来替换 BMI323 时，替换传感器 port、BMI323 第三方驱动和 CMake 源文件即可；Fusion、IMU 任务、队列、串口协议和控制层不应改成 BMI323 专用命名。
+- Fusion 使用 `xioTechnologies/Fusion`，源码位于 `middleware/mpu6050/third_party/fusion`，许可证 MIT。
+- 当前启用 `FusionAhrs`、`FusionBias`、`FusionRemap`，无磁力计运行六轴模式；yaw 会漂移，roll/pitch 由重力校正。
+- IMU 采样周期配置为 5 ms；采样任务使用 `vTaskDelayUntil()`。
+- AHRS 和 Bias 每次根据样本时间戳同步采样周期参数。
+- 启动校准默认累计 400 个样本。判定依据是加速度接近 1 g，且相邻陀螺/加速度样本波动受限；不再要求未经校准的原始陀螺绝对值接近 0。
+- 动态调用 `imu_fusion_set_alignment()` 会重置 bias、四元数、时间状态和校准计数，随后重新校准。
+- `FUSION_USE_NORMAL_SQRT` 已由 CMake target 定义启用。
+
+### 队列与串口
+
+- `imu_sample_queue`：原始 IMU 遥测，深度 1，latest-value。
+- `imu_fusion_input_queue`：Fusion 唯一原始输入，深度 1，latest-value。
+- `imu_attitude_queue`：Fusion 输出，深度 1，latest-value。
+- `IMU_UART_TEST_ENABLED` 默认 `0`；启用后发送：
+  - `0x84` 原始 IMU 状态；
+  - `0x85` 通用 IMU 诊断帧，线协议字段仍兼容 `address_8bit/who_am_i`；
+  - `0x86` 姿态帧，角度/bias 为 Q16.16，四元数为 Q1.30。
+- 运动协议已经定义 `0x01` `motion_command_t`、`0x02` `pid_config_command_t`，但当前尚未有控制任务消费它们。
+
+### 电机极性测试
+
+- 测试任务位于 `middleware/motor/src/motor_polarity_test_task.c`。
+- 配置位于 `middleware/motor/include/motor_config.h`。
+- `MOTOR_POLARITY_TEST_ENABLED` 默认 `0`，必须手动改为 `1` 后重新构建/烧录才会动作。
+- 启用后，TIM8 CH1 和 CH3 同时输出 50% PWM（`MOTOR_TEST_DUTY=3600`，周期 7199）；CH2 和 CH4 为 0。
+  - A 路：PB10/AIN1 正向，PB13/AIN2 低；
+  - B 路：PB12/BIN1 正向，PB6/BIN2 低；
+  - 输出持续到复位或断电，没有软件超时，也不会自动停机。
+- 任务使用原生 HAL：`HAL_TIM_OC_SetCompareUnitPulse`、`HAL_TIM_OC_StartChannel`、`HAL_TIM_Start`、`HAL_TIM_BREAK_EnableMainOutput`。
+- 测试前必须抬起车轮或断开机械负载，并准备硬件急停/断电；测试后先断电再把开关恢复为 `0`。
+
+### 控制系统尚未完成
+
+当前还没有：
+
+- 电机输出抽象层；
+- 编码器读取/速度反馈层；
+- 平衡控制任务；
+- 速度环、转向环和 PID 参数应用任务；
+- 倾倒、欠压、IMU 超时、命令超时和急停状态机；
+- 手机视觉命令输入。
+
+建议下一步顺序：
+
+1. 记录 A/B 电机实际方向，确认编码器方向与电机方向映射；
+2. 建立通用 `motor_output` 和 `encoder_feedback` 接口；
+3. 读取 TIM2/TIM5 编码器计数并计算左右轮速度；
+4. 在扶稳车体条件下加入 200 Hz 平衡环；
+5. 再加入速度环和转向差速环；
+6. 最后把手机视觉映射为线速度/角速度目标，经过命令超时、限幅和安全状态机后进入控制层。
