@@ -4,7 +4,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "imu_config.h"
-#include "mpu6050_port.h"
+#include "imu_port.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,8 +16,8 @@ typedef struct {
     uint32_t timestamp_ms;
     uint16_t status_flags; /* bit0: sample valid */
     uint16_t error_code;
-    mpu6050_diagnostics_t diagnostics;
-    mpu6050_sample_t sample;
+    imu_port_diagnostics_t diagnostics;
+    imu_sample_t sample;
 } imu_sample_message_t;
 
 BaseType_t imu_task_start(QueueHandle_t sample_queue,

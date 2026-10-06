@@ -5,7 +5,7 @@
 #include <math.h>
 #include <string.h>
 
-static FusionVector sample_accelerometer(const mpu6050_sample_t *sample,
+static FusionVector sample_accelerometer(const imu_sample_t *sample,
                                          const imu_fusion_t *fusion) {
     const FusionVector sensor = {
         .axis = {
@@ -17,7 +17,7 @@ static FusionVector sample_accelerometer(const mpu6050_sample_t *sample,
     return FusionRemap(sensor, fusion->alignment);
 }
 
-static FusionVector sample_gyroscope(const mpu6050_sample_t *sample,
+static FusionVector sample_gyroscope(const imu_sample_t *sample,
                                      const imu_fusion_t *fusion) {
     const FusionVector sensor = {
         .axis = {
@@ -42,14 +42,50 @@ static float max_abs_axis(const FusionVector value) {
     return result;
 }
 
-static uint8_t is_stationary(const FusionVector gyroscope,
-                             const FusionVector accelerometer) {
+static uint8_t acceleration_is_level(const FusionVector accelerometer) {
     const float acceleration_norm = FusionVectorNorm(accelerometer);
-    return (max_abs_axis(gyroscope) <= IMU_FUSION_CALIBRATION_GYRO_LIMIT_DPS &&
-            fabsf(acceleration_norm - 1.0f) <=
+    return (fabsf(acceleration_norm - 1.0f) <=
                 IMU_FUSION_CALIBRATION_ACCEL_TOLERANCE_G)
                ? 1U
                : 0U;
+}
+
+static uint8_t is_stationary(const FusionVector gyroscope,
+                             const FusionVector accelerometer) {
+    return (max_abs_axis(gyroscope) <= IMU_FUSION_BIAS_STATIONARY_LIMIT_DPS &&
+            acceleration_is_level(accelerometer) != 0U) ? 1U : 0U;
+}
+
+/* Startup calibration accepts a stable non-zero gyro output and averages it
+ * as the bias. Requiring the raw rate to be near zero would reject the very
+ * offset this phase is intended to measure. */
+static uint8_t calibration_is_stable(imu_fusion_t *fusion,
+                                     const FusionVector gyroscope,
+                                     const FusionVector accelerometer) {
+    uint8_t stable = 0U;
+
+    if (acceleration_is_level(accelerometer) == 0U) {
+        fusion->calibration_has_previous = 0U;
+        return 0U;
+    }
+    if (fusion->calibration_has_previous == 0U) {
+        stable = 1U;
+    } else {
+        const FusionVector gyro_delta =
+            FusionVectorSubtract(gyroscope, fusion->calibration_previous_gyro);
+        const FusionVector accel_delta =
+            FusionVectorSubtract(accelerometer, fusion->calibration_previous_accel);
+        stable = (max_abs_axis(gyro_delta) <=
+                      IMU_FUSION_CALIBRATION_GYRO_DELTA_DPS &&
+                  max_abs_axis(accel_delta) <=
+                      IMU_FUSION_CALIBRATION_ACCEL_DELTA_G)
+                     ? 1U
+                     : 0U;
+    }
+    fusion->calibration_previous_gyro = gyroscope;
+    fusion->calibration_previous_accel = accelerometer;
+    fusion->calibration_has_previous = 1U;
+    return stable;
 }
 
 static float sample_period(const imu_fusion_t *fusion, uint32_t timestamp_ms) {
@@ -127,17 +163,32 @@ void imu_fusion_init(imu_fusion_t *fusion) {
 
 void imu_fusion_set_alignment(imu_fusion_t *fusion,
                               FusionRemapAlignment alignment) {
-    if (fusion != NULL) {
+    if (fusion != NULL && fusion->alignment != alignment) {
         fusion->alignment = alignment;
+        fusion->gyro_calibration_sum = FUSION_VECTOR_ZERO;
+        fusion->calibration_previous_gyro = FUSION_VECTOR_ZERO;
+        fusion->calibration_previous_accel = FUSION_VECTOR_ZERO;
+        fusion->calibration_samples = 0U;
+        fusion->calibrated = 0U;
+        fusion->calibration_has_previous = 0U;
+        fusion->last_timestamp_ms = 0U;
+        fusion->has_timestamp = 0U;
+        {
+            const FusionBiasSettings bias_settings = fusion->bias.settings;
+            FusionBiasInitialise(&fusion->bias);
+            FusionBiasSetSettings(&fusion->bias, &bias_settings);
+        }
+        FusionAhrsRestart(&fusion->ahrs);
     }
 }
 
 uint8_t imu_fusion_update(imu_fusion_t *fusion,
-                          const mpu6050_sample_t *sample,
+                          const imu_sample_t *sample,
                           uint32_t timestamp_ms,
                           imu_fusion_output_t *output) {
     FusionVector accelerometer;
     FusionVector gyroscope;
+    float period;
     uint16_t status_flags = 0U;
 
     if (fusion == NULL || sample == NULL) {
@@ -154,7 +205,9 @@ uint8_t imu_fusion_update(imu_fusion_t *fusion,
 
     if (fusion->calibrated == 0U) {
         status_flags = IMU_FUSION_STATUS_CALIBRATING;
-        if (is_stationary(gyroscope, accelerometer) != 0U) {
+        const uint8_t calibration_stable =
+            calibration_is_stable(fusion, gyroscope, accelerometer);
+        if (calibration_stable != 0U) {
             fusion->gyro_calibration_sum =
                 FusionVectorAdd(fusion->gyro_calibration_sum, gyroscope);
             fusion->calibration_samples++;
@@ -195,7 +248,7 @@ uint8_t imu_fusion_update(imu_fusion_t *fusion,
                         ? 0.0f
                         : fusion->gyro_calibration_sum.axis.z /
                               (float)fusion->calibration_samples;
-                if (is_stationary(gyroscope, accelerometer) != 0U) {
+                if (calibration_stable != 0U) {
                     output->status_flags |= IMU_FUSION_STATUS_STATIONARY;
                 }
             }
@@ -205,7 +258,13 @@ uint8_t imu_fusion_update(imu_fusion_t *fusion,
         }
     }
 
-    FusionAhrsSetSamplePeriod(&fusion->ahrs, sample_period(fusion, timestamp_ms));
+    period = sample_period(fusion, timestamp_ms);
+    FusionAhrsSetSamplePeriod(&fusion->ahrs, period);
+    {
+        FusionBiasSettings bias_settings = fusion->bias.settings;
+        bias_settings.sampleRate = 1.0f / period;
+        FusionBiasSetSettings(&fusion->bias, &bias_settings);
+    }
     gyroscope = FusionBiasUpdate(&fusion->bias, gyroscope);
     FusionAhrsUpdateNoMagnetometer(&fusion->ahrs, gyroscope, accelerometer);
 

@@ -42,7 +42,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
-  # Add additional defined symbols here
+  FUSION_USE_NORMAL_SQRT
 )
 
 target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC

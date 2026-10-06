@@ -14,7 +14,8 @@
  * @brief Uncomment this definition or add as a preprocessor definition to use
  * normal square root operations.
  */
-//#define FUSION_USE_NORMAL_SQRT
+/* The application enables this through the CMake target definition when the
+ * hardware FPU is available. */
 
 /**
  * @brief Uncomment this definition or add as a preprocessor definition to

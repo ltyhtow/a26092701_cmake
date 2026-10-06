@@ -11,25 +11,27 @@ static QueueHandle_t imu_fusion_input_queue;
 
 static void imu_task_entry(void *argument) {
     imu_sample_message_t message;
-    mpu6050_sample_t sample;
+    imu_sample_t sample;
     uint8_t init_result;
+    TickType_t last_wake_time;
 
     (void)argument;
-    while ((init_result = mpu6050_port_init()) != 0U) {
+    while ((init_result = imu_port_init()) != 0U) {
         memset(&message, 0, sizeof(message));
         message.timestamp_ms = (uint32_t)xTaskGetTickCount();
         message.error_code = (uint16_t)init_result;
-        mpu6050_port_get_diagnostics(&message.diagnostics);
+        imu_port_get_diagnostics(&message.diagnostics);
         (void)xQueueOverwrite(imu_sample_queue, &message);
         (void)xQueueOverwrite(imu_fusion_input_queue, &message);
         vTaskDelay(pdMS_TO_TICKS(500U));
     }
 
+    last_wake_time = xTaskGetTickCount();
     for (;;) {
         memset(&message, 0, sizeof(message));
         message.timestamp_ms = (uint32_t)xTaskGetTickCount();
-        mpu6050_port_get_diagnostics(&message.diagnostics);
-        if (mpu6050_port_read(&sample) == 0U) {
+        imu_port_get_diagnostics(&message.diagnostics);
+        if (imu_port_read(&sample) == 0U) {
             message.status_flags = IMU_SAMPLE_STATUS_VALID;
             message.sample = sample;
         } else {
@@ -37,7 +39,7 @@ static void imu_task_entry(void *argument) {
         }
         (void)xQueueOverwrite(imu_sample_queue, &message);
         (void)xQueueOverwrite(imu_fusion_input_queue, &message);
-        vTaskDelay(pdMS_TO_TICKS(IMU_SAMPLE_PERIOD_MS));
+        vTaskDelayUntil(&last_wake_time, pdMS_TO_TICKS(IMU_SAMPLE_PERIOD_MS));
     }
 }
 

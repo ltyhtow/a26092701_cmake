@@ -6,7 +6,7 @@
 #include "FusionAhrs.h"
 #include "FusionBias.h"
 #include "FusionRemap.h"
-#include "mpu6050_port.h"
+#include "imu_port.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,10 +25,13 @@ typedef struct {
     FusionBias bias;
     FusionRemapAlignment alignment;
     FusionVector gyro_calibration_sum;
+    FusionVector calibration_previous_gyro;
+    FusionVector calibration_previous_accel;
     uint32_t calibration_samples;
     uint32_t last_timestamp_ms;
     uint8_t calibrated;
     uint8_t has_timestamp;
+    uint8_t calibration_has_previous;
 } imu_fusion_t;
 
 typedef struct {
@@ -48,7 +51,7 @@ void imu_fusion_set_alignment(imu_fusion_t *fusion,
                               FusionRemapAlignment alignment);
 
 uint8_t imu_fusion_update(imu_fusion_t *fusion,
-                          const mpu6050_sample_t *sample,
+                          const imu_sample_t *sample,
                           uint32_t timestamp_ms,
                           imu_fusion_output_t *output);
 

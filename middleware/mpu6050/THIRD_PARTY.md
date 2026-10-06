@@ -5,8 +5,10 @@ The `third_party/libdriver` directory contains the MPU6050 driver from
 
 The project-specific adapter in `src/mpu6050_port.c` connects LibDriver's
 platform-independent I2C callbacks to the generated STM32C5 HAL I2C1 handle.
-The driver is used for register configuration and raw accel/gyro sampling;
-the balance controller and attitude estimator remain application code.
+It implements the generic `imu_port.h` contract used by the sampler and
+Fusion layer. A future BMI323 port replaces this adapter and its sensor driver;
+the sampler, queues, Fusion task, protocol and balance controller do not need
+sensor-specific changes.
 
 The application adapter explicitly clears the MPU6050 sleep bit after the
 LibDriver reset sequence. The chip reset default keeps `PWR_MGMT_1.SLEEP`

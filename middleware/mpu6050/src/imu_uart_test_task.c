@@ -87,8 +87,8 @@ static void imu_uart_test_task_entry(void *argument) {
             memset(&diagnostic, 0, sizeof(diagnostic));
             diagnostic.version = SERIAL_PROTOCOL_VERSION;
             diagnostic.sequence = sequence;
-            diagnostic.address_8bit = message.diagnostics.address_8bit;
-            diagnostic.who_am_i = message.diagnostics.who_am_i;
+            diagnostic.address_8bit = message.diagnostics.address;
+            diagnostic.who_am_i = message.diagnostics.chip_id;
             diagnostic.init_result = message.diagnostics.init_result;
             diagnostic.hal_status = message.diagnostics.hal_status;
             diagnostic.hal_error_codes = message.diagnostics.hal_error_codes;

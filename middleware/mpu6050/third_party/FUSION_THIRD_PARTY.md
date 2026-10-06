@@ -17,3 +17,6 @@ The application builds the 6-axis components needed by this project:
 The upstream sources are kept unchanged. `src/imu_fusion.c` supplies the
 project-specific startup stationary calibration, units, sample timing, and
 configuration.
+
+`FUSION_USE_NORMAL_SQRT` is enabled by the application CMake target because
+the STM32C562 build uses the Cortex-M33 single-precision hardware FPU.
