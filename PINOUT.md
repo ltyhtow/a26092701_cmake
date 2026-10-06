@@ -46,9 +46,9 @@ C5 GND 必须与 AT8236 GND 共地。电机电源、驱动板输出和电机端�
 `middleware/motor/include/motor_config.h` 中的 `MOTOR_POLARITY_TEST_ENABLED`
 默认是 `0`。临时改为 `1` 后重新构建并烧录，任务会执行一次：
 
-1. A 路：PB10/`AIN1` 输出 PWM、PB13/`AIN2` 保持低电平，持续 1 秒；
+1. A 路：PB10/`AIN1` 输出 50% PWM、PB13/`AIN2` 保持低电平，持续 10 秒；
 2. 停止 1 秒；
-3. B 路：PB12/`BIN1` 输出 PWM、PB6/`BIN2` 保持低电平，持续 1 秒；
+3. B 路：PB12/`BIN1` 输出 50% PWM、PB6/`BIN2` 保持低电平，持续 10 秒；
 4. 停止并关闭 TIM8 主输出。
 
 测试前抬起车轮或断开机械负载，确认急停和电机电源可随时断开。测试结束后将开关恢复为 `0`，否则每次复位都会再次执行。
